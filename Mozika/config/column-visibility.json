@@ -1,0 +1,187 @@
+{
+"albums": {
+    "list": ["id", "artistidArtists", "title", "coverUrl", "releaseDate", "createdAt"],
+    "detail": ["id", "artistidArtists", "title", "coverUrl", "releaseDate", "createdAt"]
+  },
+"artist_group_members": {
+    "list": ["id", "groupartistidArtists", "memberartistidArtists", "fullName", "roleinstrumentidInstrumentRoles", "photoUrl", "statusidMemberStatuses", "createdAt"],
+    "detail": ["id", "groupartistidArtists", "memberartistidArtists", "fullName", "roleinstrumentidInstrumentRoles", "photoUrl", "statusidMemberStatuses", "createdAt"]
+  },
+"artist_types": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"artists": {
+    "list": ["id", "useridUsers", "artisttypeidArtistTypes", "stageName", "activeSinceYear", "photoUrl", "bio", "verificationstatusidVerificationStatuses", "verifiedAt", "isCertified", "createdAt"],
+    "detail": ["id", "useridUsers", "artisttypeidArtistTypes", "stageName", "activeSinceYear", "photoUrl", "bio", "verificationstatusidVerificationStatuses", "verifiedAt", "isCertified", "createdAt"]
+  },
+"audio_storage_types": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"clients": {
+    "list": ["id", "useridUsers"],
+    "detail": ["id", "useridUsers"]
+  },
+"comments": {
+    "list": ["id", "authoruseridUsers", "targettypeidInteractionTargets", "targetId", "content", "isHidden", "createdAt"],
+    "detail": ["id", "authoruseridUsers", "targettypeidInteractionTargets", "targetId", "content", "isHidden", "createdAt"]
+  },
+"concerts": {
+    "list": ["id", "eventidEvents", "title", "description", "artistidArtists", "venueidVenues", "startTime", "endTime", "statusidParticipationStatuses", "respondedAt", "createdbyartistidArtists", "moderationstatusidEventModerationStatuses", "reviewedAt", "createdAt"],
+    "detail": ["id", "eventidEvents", "title", "description", "artistidArtists", "venueidVenues", "startTime", "endTime", "statusidParticipationStatuses", "respondedAt", "createdbyartistidArtists", "moderationstatusidEventModerationStatuses", "reviewedAt", "createdAt"]
+  },
+"content_submissions": {
+    "list": ["id", "artistidArtists", "sourceFilename", "fileType", "statusidSubmissionStatuses", "errorMessage", "submittedAt", "processedAt"],
+    "detail": ["id", "artistidArtists", "sourceFilename", "fileType", "statusidSubmissionStatuses", "errorMessage", "submittedAt", "processedAt"]
+  },
+"downloads": {
+    "list": ["id", "useridUsers", "playlistidPlaylists", "downloadedAt", "expiresAt"],
+    "detail": ["id", "useridUsers", "playlistidPlaylists", "downloadedAt", "expiresAt"]
+  },
+"editorial_playlist_songs": {
+    "list": ["id", "editorialplaylistidEditorialPlaylists", "songidSongs", "position"],
+    "detail": ["id", "editorialplaylistidEditorialPlaylists", "songidSongs", "position"]
+  },
+"editorial_playlists": {
+    "list": ["id", "artistidArtists", "title", "description", "coverUrl", "isFeatured", "createdAt"],
+    "detail": ["id", "artistidArtists", "title", "description", "coverUrl", "isFeatured", "createdAt"]
+  },
+"event_media": {
+    "list": ["id", "eventidEvents", "uploaderuseridUsers", "mediatypeidMediaTypes", "url", "createdAt"],
+    "detail": ["id", "eventidEvents", "uploaderuseridUsers", "mediatypeidMediaTypes", "url", "createdAt"]
+  },
+"event_moderation_statuses": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"events": {
+    "list": ["id", "name", "description", "startDate", "endDate", "createdbyartistidArtists", "moderationstatusidEventModerationStatuses", "reviewedAt", "createdAt"],
+    "detail": ["id", "name", "description", "startDate", "endDate", "createdbyartistidArtists", "moderationstatusidEventModerationStatuses", "reviewedAt", "createdAt"]
+  },
+"follows": {
+    "list": ["id", "clientuseridUsers", "artistidArtists", "createdAt"],
+    "detail": ["id", "clientuseridUsers", "artistidArtists", "createdAt"]
+  },
+"genres": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"instrument_roles": {
+    "list": ["id", "label"],
+    "detail": ["id", "label"]
+  },
+"interaction_targets": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"likes": {
+    "list": ["id", "useridUsers", "targettypeidInteractionTargets", "targetId", "createdAt"],
+    "detail": ["id", "useridUsers", "targettypeidInteractionTargets", "targetId", "createdAt"]
+  },
+"listening_history": {
+    "list": ["id", "useridUsers", "songidSongs", "playmodeidPlayModes", "listenedAt"],
+    "detail": ["id", "useridUsers", "songidSongs", "playmodeidPlayModes", "listenedAt"]
+  },
+"media_types": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"member_statuses": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"notification_preferences": {
+    "list": ["id", "useridUsers", "notificationtypeidNotificationTypes", "isEnabled"],
+    "detail": ["id", "useridUsers", "notificationtypeidNotificationTypes", "isEnabled"]
+  },
+"notification_types": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"notifications": {
+    "list": ["id", "useridUsers", "typeidNotificationTypes", "content", "relatedentitytypeidInteractionTargets", "relatedEntityId", "isRead", "createdAt"],
+    "detail": ["id", "useridUsers", "typeidNotificationTypes", "content", "relatedentitytypeidInteractionTargets", "relatedEntityId", "isRead", "createdAt"]
+  },
+"participation_statuses": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"play_modes": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"playlist_songs": {
+    "list": ["id", "playlistidPlaylists", "songidSongs", "position", "addedAt"],
+    "detail": ["id", "playlistidPlaylists", "songidSongs", "position", "addedAt"]
+  },
+"playlist_visibilities": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"playlists": {
+    "list": ["id", "owneruseridUsers", "name", "visibilityidPlaylistVisibilities", "shareToken", "createdAt", "updatedAt"],
+    "detail": ["id", "owneruseridUsers", "name", "visibilityidPlaylistVisibilities", "shareToken", "createdAt", "updatedAt"]
+  },
+"report_statuses": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"reports": {
+    "list": ["id", "reporteruseridUsers", "targettypeidInteractionTargets", "targetId", "reason", "statusidReportStatuses", "reviewedAt", "createdAt"],
+    "detail": ["id", "reporteruseridUsers", "targettypeidInteractionTargets", "targetId", "reason", "statusidReportStatuses", "reviewedAt", "createdAt"]
+  },
+"search_history": {
+    "list": ["id", "useridUsers", "queryText", "searchedAt"],
+    "detail": ["id", "useridUsers", "queryText", "searchedAt"]
+  },
+"song_genres": {
+    "list": ["id", "songidSongs", "genreidGenres"],
+    "detail": ["id", "songidSongs", "genreidGenres"]
+  },
+"songs": {
+    "list": ["id", "artistidArtists", "albumidAlbums", "title", "durationSeconds", "releaseDate", "language", "authorComposer", "musicalArranger", "recordingLocation", "recordingDate", "storagetypeidAudioStorageTypes", "audioUrl", "audioFile", "videoUrl", "karaokeAudio", "lyrics", "lyricsSyncData", "solfa", "playback", "isDownloadable", "createdAt"],
+    "detail": ["id", "artistidArtists", "albumidAlbums", "title", "durationSeconds", "releaseDate", "language", "authorComposer", "musicalArranger", "recordingLocation", "recordingDate", "storagetypeidAudioStorageTypes", "audioUrl", "audioFile", "videoUrl", "karaokeAudio", "lyrics", "lyricsSyncData", "solfa", "playback", "isDownloadable", "createdAt"]
+  },
+"submission_statuses": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"up_next_queue": {
+    "list": ["id", "useridUsers", "songidSongs", "position", "addedAt"],
+    "detail": ["id", "useridUsers", "songidSongs", "position", "addedAt"]
+  },
+"user_roles": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"user_status_history": {
+    "list": ["id", "useridUsers", "previousstatusidUserStatuses", "newstatusidUserStatuses", "reason", "changedbyuseridUsers", "createdAt"],
+    "detail": ["id", "useridUsers", "previousstatusidUserStatuses", "newstatusidUserStatuses", "reason", "changedbyuseridUsers", "createdAt"]
+  },
+"user_statuses": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"users": {
+    "list": ["id", "email", "phone", "emailVerifiedAt", "phoneVerifiedAt", "passwordHash", "roleidUserRoles", "statusidUserStatuses", "createdAt", "updatedAt"],
+    "detail": ["id", "email", "phone", "emailVerifiedAt", "phoneVerifiedAt", "passwordHash", "roleidUserRoles", "statusidUserStatuses", "createdAt", "updatedAt"]
+  },
+"venues": {
+    "list": ["id", "name", "location"],
+    "detail": ["id", "name", "location"]
+  },
+"verification_channels": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  },
+"verification_codes": {
+    "list": ["id", "useridUsers", "channelidVerificationChannels", "destination", "code", "expiresAt", "consumedAt", "createdAt"],
+    "detail": ["id", "useridUsers", "channelidVerificationChannels", "destination", "code", "expiresAt", "consumedAt", "createdAt"]
+  },
+"verification_statuses": {
+    "list": ["id", "name"],
+    "detail": ["id", "name"]
+  }
+
+}

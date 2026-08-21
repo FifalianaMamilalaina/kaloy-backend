@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: mozika
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/musical_app
+    username: Votre_utilisateur_postgres
+    password: Votre_mot_de_passe_postgres
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate.format_sql: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+
+
+server:
+  port: 8087
+  servlet:
+    context-path: /mozika
+
+# Logs Configuration
+logging:
+  level:
+    root: TRACE
+    org.hibernate.SQL: TRACE
+
+
+
+
+
+app:
+  config:
+    column-visibility:
+      file: ${user.dir}/config/column-visibility.json
