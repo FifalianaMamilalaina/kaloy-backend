@@ -4,8 +4,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5432/musical_app
-    username: Votre_utilisateur_postgres
-    password: Votre_mot_de_passe_postgres
+    username: postgres
+    password: Fifaliana!
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
