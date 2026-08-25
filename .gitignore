@@ -2,3 +2,6 @@ Mozika/src/main/resources/application.yml
 Mozika/src/main/resources/application.yml
 Mozika/target/classes/application.yml
 Mozika/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+target/
+*.class
+src/main/resources/application.yml

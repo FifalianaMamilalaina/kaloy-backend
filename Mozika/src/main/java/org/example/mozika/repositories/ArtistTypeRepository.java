@@ -4,6 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.example.mozika.models.ArtistType;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface ArtistTypeRepository extends JpaRepository<ArtistType, Long>, JpaSpecificationExecutor<ArtistType> {
+import java.util.Optional;
 
+public interface ArtistTypeRepository extends JpaRepository<ArtistType, Long>, JpaSpecificationExecutor<ArtistType> {
+    Optional<ArtistType> findByName(String name);
 }
