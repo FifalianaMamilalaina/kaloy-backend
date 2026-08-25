@@ -38,3 +38,6 @@ app:
   config:
     column-visibility:
       file: ${user.dir}/config/column-visibility.json
+  jwt:
+    secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
+    expiration-ms: 86400000
