@@ -1,3 +1,19 @@
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\AuthController.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\AuthService.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\DataInitializer.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\DefaultAuthService.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\dto\AuthResponse.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\dto\LoginRequest.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\dto\OtpVerifyRequest.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\dto\RegisterArtistRequest.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\dto\RegisterClientRequest.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\dto\RegisterResponse.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\dto\ResendOtpRequest.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\EmailService.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\JwtAuthenticationFilter.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\JwtService.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\SecurityConfig.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\UserDetailsServiceImpl.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\config\WebConfig.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\AlbumController.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\ArtistController.java
@@ -153,6 +169,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\VerificationChannel.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\VerificationCode.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\VerificationStatuse.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\VerificationStatusUser.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\MozikaApplication.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\AlbumRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\ArtistGroupMemberRepository.java
@@ -201,6 +218,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\VerificationChannelRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\VerificationCodeRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\VerificationStatuseRepository.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\VerificationStatusUserRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultAlbumService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultArtistGroupMemberService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultArtistService.java

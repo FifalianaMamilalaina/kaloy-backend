@@ -17,6 +17,18 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: antoniabijourasoarimalala@gmail.com
+    password: kadd ohmz ltfx ahnw
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 
 server:
@@ -27,8 +39,10 @@ server:
 # Logs Configuration
 logging:
   level:
-    root: TRACE
-    org.hibernate.SQL: TRACE
+    root: INFO                      
+    org.mozika: DEBUG              
+    org.hibernate.SQL: DEBUG       
+    org.hibernate.type.descriptor.sql.BasicBinder:
 
 
 
