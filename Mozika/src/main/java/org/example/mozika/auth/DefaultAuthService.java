@@ -29,6 +29,7 @@ public class DefaultAuthService implements AuthService {
     private final UsersInfosRepository usersInfosRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailService emailService;
 
     public DefaultAuthService(UserRepository userRepository,
                               UserRoleRepository userRoleRepository,
@@ -42,7 +43,8 @@ public class DefaultAuthService implements AuthService {
                               ArtistRepository artistRepository,
                               UsersInfosRepository usersInfosRepository,
                               PasswordEncoder passwordEncoder,
-                              JwtService jwtService) {
+                              JwtService jwtService,
+                              EmailService emailService) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
         this.userStatuseRepository = userStatuseRepository;
@@ -56,6 +58,7 @@ public class DefaultAuthService implements AuthService {
         this.usersInfosRepository = usersInfosRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -254,12 +257,6 @@ public class DefaultAuthService implements AuthService {
         verificationCode.setCreatedAt(LocalDateTime.now());
         verificationCodeRepository.save(verificationCode);
 
-        System.out.println("╔══════════════════════════════════════╗");
-        System.out.println("║         [OTP-KALOY]                  ║");
-        System.out.println("║  userId : " + user.getId());
-        System.out.println("║  email  : " + user.getEmail());
-        System.out.println("║  code   : " + otpCode);
-        System.out.println("║  expire : " + expiresAt);
-        System.out.println("╚══════════════════════════════════════╝");
+        emailService.sendOtpEmail(user.getEmail(), otpCode, expiresAt);
     }
 }
