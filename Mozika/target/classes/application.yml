@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/musical_app
     username: postgres
-    password: Bijou
+    password: 3198
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:

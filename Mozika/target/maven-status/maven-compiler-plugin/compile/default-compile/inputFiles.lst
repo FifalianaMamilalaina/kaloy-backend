@@ -40,6 +40,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\UpNextQueueController.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\UserController.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\UserRoleController.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\UsersInfosController.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\UserStatuseController.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\UserStatusHistoryController.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\VenueController.java
@@ -107,6 +108,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\dto\UserFullDto.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\dto\UserRoleSearch.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\dto\UserSearch.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\dto\UsersInfosSearch.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\dto\UserStatuseSearch.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\dto\UserStatusHistorySearch.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\dto\VenueFullDto.java
@@ -144,6 +146,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\UpNextQueue.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\User.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\UserRole.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\UsersInfos.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\UserStatuse.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\UserStatusHistory.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\models\Venue.java
@@ -191,6 +194,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\UpNextQueueRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\UserRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\UserRoleRepository.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\UsersInfosRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\UserStatuseRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\UserStatusHistoryRepository.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\repositories\VenueRepository.java
@@ -238,6 +242,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultUpNextQueueService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultUserRoleService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultUserService.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultUsersInfosService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultUserStatuseService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultUserStatusHistoryService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\DefaultVenueService.java
@@ -285,6 +290,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\interfaces\UpNextQueueService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\interfaces\UserRoleService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\interfaces\UserService.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\interfaces\UsersInfosService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\interfaces\UserStatuseService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\interfaces\UserStatusHistoryService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\services\interfaces\VenueService.java
@@ -330,6 +336,7 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\specification\SubmissionStatuseSpecification.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\specification\UpNextQueueSpecification.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\specification\UserRoleSpecification.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\specification\UsersInfosSpecification.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\specification\UserSpecification.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\specification\UserStatuseSpecification.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\specification\UserStatusHistorySpecification.java
