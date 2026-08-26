@@ -12,7 +12,9 @@ D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\m
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\EmailService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\JwtAuthenticationFilter.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\JwtService.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\MapiTokenService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\SecurityConfig.java
+D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\SmsService.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\auth\UserDetailsServiceImpl.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\config\WebConfig.java
 D:\ITU\STAGE_MEMOIRE_SOUTENANCE\kaloy-backend\Mozika\src\main\java\org\example\mozika\controllers\AlbumController.java

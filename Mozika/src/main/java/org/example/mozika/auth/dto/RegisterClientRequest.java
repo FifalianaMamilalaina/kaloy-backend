@@ -22,4 +22,7 @@ public class RegisterClientRequest {
     private String lastName;
     private String phone;
     private String username;
+
+    /** Canal d'envoi OTP : "EMAIL" (défaut) ou "SMS" */
+    private String otpChannel = "EMAIL";
 }

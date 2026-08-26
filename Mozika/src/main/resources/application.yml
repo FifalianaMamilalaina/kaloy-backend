@@ -48,6 +48,12 @@ logging:
 
 
 
+mapi:
+  base-url: https://messaging.mapi.mg/api
+  username: kaloy123
+  password: "hZ7Z8zrP:4.!9Rj"
+  sender-id: KALOY
+
 app:
   config:
     column-visibility:

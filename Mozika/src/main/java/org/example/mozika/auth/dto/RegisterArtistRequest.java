@@ -24,7 +24,11 @@ public class RegisterArtistRequest {
     @NotBlank(message = "Le nom de scène est obligatoire")
     private String stageName;
 
+    private String phone;
     private Integer activeSinceYear;
     private String bio;
     private String photoUrl;
+
+    /** Canal d'envoi OTP : "EMAIL" (défaut) ou "SMS" */
+    private String otpChannel = "EMAIL";
 }
