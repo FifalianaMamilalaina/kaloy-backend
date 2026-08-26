@@ -30,21 +30,23 @@ public class DefaultAuthService implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final SmsService smsService;
 
     public DefaultAuthService(UserRepository userRepository,
-                              UserRoleRepository userRoleRepository,
-                              UserStatuseRepository userStatuseRepository,
-                              VerificationStatusUserRepository verificationStatusUserRepository,
-                              VerificationCodeRepository verificationCodeRepository,
-                              VerificationChannelRepository verificationChannelRepository,
-                              ArtistTypeRepository artistTypeRepository,
-                              VerificationStatuseRepository verificationStatuseRepository,
-                              ClientRepository clientRepository,
-                              ArtistRepository artistRepository,
-                              UsersInfosRepository usersInfosRepository,
-                              PasswordEncoder passwordEncoder,
-                              JwtService jwtService,
-                              EmailService emailService) {
+            UserRoleRepository userRoleRepository,
+            UserStatuseRepository userStatuseRepository,
+            VerificationStatusUserRepository verificationStatusUserRepository,
+            VerificationCodeRepository verificationCodeRepository,
+            VerificationChannelRepository verificationChannelRepository,
+            ArtistTypeRepository artistTypeRepository,
+            VerificationStatuseRepository verificationStatuseRepository,
+            ClientRepository clientRepository,
+            ArtistRepository artistRepository,
+            UsersInfosRepository usersInfosRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            EmailService emailService,
+            SmsService smsService) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
         this.userStatuseRepository = userStatuseRepository;
@@ -59,6 +61,7 @@ public class DefaultAuthService implements AuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailService = emailService;
+        this.smsService = smsService;
     }
 
     @Override
@@ -69,11 +72,14 @@ public class DefaultAuthService implements AuthService {
         }
 
         UserRole role = userRoleRepository.findByName("CLIENT")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Rôle CLIENT introuvable"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Rôle CLIENT introuvable"));
         UserStatuse status = userStatuseRepository.findByName("ACTIVE")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut ACTIVE introuvable"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Statut ACTIVE introuvable"));
         VerificationStatusUser verificationStatus = verificationStatusUserRepository.findByName("NOT_VERIFIED")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut NOT_VERIFIED introuvable"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Statut NOT_VERIFIED introuvable"));
 
         User user = new User();
         user.setEmail(request.getEmail());
@@ -102,14 +108,14 @@ public class DefaultAuthService implements AuthService {
             usersInfosRepository.save(infos);
         }
 
-        sendOtp(savedUser);
+        sendOtp(savedUser, request.getOtpChannel());
 
+        String canal = "SMS".equalsIgnoreCase(request.getOtpChannel()) ? "SMS" : "email";
         return new RegisterResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),
-                "Code OTP envoyé — vérifiez votre email",
-                "NOT_VERIFIED"
-        );
+                "Code OTP envoyé — vérifiez votre " + canal,
+                "NOT_VERIFIED");
     }
 
     @Override
@@ -125,11 +131,14 @@ public class DefaultAuthService implements AuthService {
         }
 
         UserRole role = userRoleRepository.findByName("ARTIST")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Rôle ARTIST introuvable"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Rôle ARTIST introuvable"));
         UserStatuse status = userStatuseRepository.findByName("ACTIVE")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut ACTIVE introuvable"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Statut ACTIVE introuvable"));
         VerificationStatusUser verificationStatus = verificationStatusUserRepository.findByName("NOT_VERIFIED")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut NOT_VERIFIED introuvable"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Statut NOT_VERIFIED introuvable"));
 
         User user = new User();
         user.setEmail(request.getEmail());
@@ -142,9 +151,11 @@ public class DefaultAuthService implements AuthService {
         User savedUser = userRepository.save(user);
 
         ArtistType artistType = artistTypeRepository.findByName(artistTypeValue)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Type d'artiste introuvable"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Type d'artiste introuvable"));
         VerificationStatuse artistVerifStatus = verificationStatuseRepository.findByName("PENDING")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut PENDING introuvable"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Statut PENDING introuvable"));
 
         Artist artist = new Artist();
         artist.setUseridUsers(savedUser);
@@ -158,14 +169,14 @@ public class DefaultAuthService implements AuthService {
         artist.setCreatedAt(LocalDateTime.now());
         artistRepository.save(artist);
 
-        sendOtp(savedUser);
+        sendOtp(savedUser, request.getOtpChannel());
 
+        String canal = "SMS".equalsIgnoreCase(request.getOtpChannel()) ? "SMS" : "email";
         return new RegisterResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),
-                "Code OTP envoyé — vérifiez votre email",
-                "NOT_VERIFIED"
-        );
+                "Code OTP envoyé — vérifiez votre " + canal,
+                "NOT_VERIFIED");
     }
 
     @Override
@@ -176,7 +187,8 @@ public class DefaultAuthService implements AuthService {
 
         VerificationCode code = verificationCodeRepository
                 .findTopByUseridUsersOrderByCreatedAtDesc(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aucun code OTP trouvé pour cet utilisateur"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Aucun code OTP trouvé pour cet utilisateur"));
 
         if (code.getConsumedAt() != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ce code a déjà été utilisé");
@@ -192,7 +204,8 @@ public class DefaultAuthService implements AuthService {
         verificationCodeRepository.save(code);
 
         VerificationStatusUser verified = verificationStatusUserRepository.findByName("VERIFIED")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut VERIFIED introuvable"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Statut VERIFIED introuvable"));
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setVerificationStatusUser(verified);
         user.setUpdatedAt(LocalDateTime.now());
@@ -209,22 +222,33 @@ public class DefaultAuthService implements AuthService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 
-        verificationCodeRepository.findTopByUseridUsersOrderByCreatedAtDesc(user).ifPresent(lastCode -> {
+        VerificationCode lastCode = verificationCodeRepository
+                .findTopByUseridUsersOrderByCreatedAtDesc(user)
+                .orElse(null);
+
+        if (lastCode != null) {
             LocalDateTime antiAbuseLimit = LocalDateTime.now().minusSeconds(60);
             if (lastCode.getCreatedAt().isAfter(antiAbuseLimit)) {
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                         "Attendez 60 secondes avant de renvoyer le code");
             }
-        });
+        }
 
-        sendOtp(user);
+        String channel = "EMAIL";
+        if (lastCode != null && lastCode.getChannelidVerificationChannels() != null
+                && "SMS".equals(lastCode.getChannelidVerificationChannels().getName())) {
+            channel = "SMS";
+        }
+
+        sendOtp(user, channel);
         return "Code OTP renvoyé avec succès";
     }
 
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou mot de passe incorrect"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou mot de passe incorrect"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou mot de passe incorrect");
@@ -241,22 +265,36 @@ public class DefaultAuthService implements AuthService {
         return new AuthResponse(token, user.getId(), user.getEmail(), role);
     }
 
-    private void sendOtp(User user) {
+    private void sendOtp(User user, String otpChannel) {
+        boolean viaSms = "SMS".equalsIgnoreCase(otpChannel);
+
+        if (viaSms && (user.getPhone() == null || user.getPhone().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Numéro de téléphone requis pour l'envoi OTP par SMS");
+        }
+
+        String channelName = viaSms ? "SMS" : "EMAIL";
+        VerificationChannel channel = verificationChannelRepository.findByName(channelName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Canal " + channelName + " introuvable"));
+
         String otpCode = String.format("%06d", new Random().nextInt(999999));
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
-
-        VerificationChannel channel = verificationChannelRepository.findByName("EMAIL")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Canal EMAIL introuvable"));
+        String destination = viaSms ? user.getPhone() : user.getEmail();
 
         VerificationCode verificationCode = new VerificationCode();
         verificationCode.setUseridUsers(user);
         verificationCode.setChannelidVerificationChannels(channel);
-        verificationCode.setDestination(user.getEmail());
+        verificationCode.setDestination(destination);
         verificationCode.setCode(otpCode);
         verificationCode.setExpiresAt(expiresAt);
         verificationCode.setCreatedAt(LocalDateTime.now());
         verificationCodeRepository.save(verificationCode);
 
-        emailService.sendOtpEmail(user.getEmail(), otpCode, expiresAt);
+        if (viaSms) {
+            smsService.sendOtpSms(user.getPhone(), otpCode);
+        } else {
+            emailService.sendOtpEmail(user.getEmail(), otpCode, expiresAt);
+        }
     }
 }
