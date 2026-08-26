@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/musical_app
     username: postgres
-    password: Bijou
+    password: 3198
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -17,6 +17,18 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: antoniabijourasoarimalala@gmail.com
+    password: kadd ohmz ltfx ahnw
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 
 server:
@@ -27,14 +39,25 @@ server:
 # Logs Configuration
 logging:
   level:
-    root: TRACE
-    org.hibernate.SQL: TRACE
+    root: INFO                      
+    org.mozika: DEBUG              
+    org.hibernate.SQL: DEBUG       
+    org.hibernate.type.descriptor.sql.BasicBinder:
 
 
 
 
+
+mapi:
+  base-url: https://messaging.mapi.mg/api
+  username: kaloy123
+  password: "hZ7Z8zrP:4.!9Rj"
+  sender-id: KALOY
 
 app:
   config:
     column-visibility:
       file: ${user.dir}/config/column-visibility.json
+  jwt:
+    secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
+    expiration-ms: 86400000

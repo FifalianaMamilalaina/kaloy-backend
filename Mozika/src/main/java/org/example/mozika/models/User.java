@@ -42,6 +42,9 @@ public class User  {
 	@Column(name="updated_at", unique = false, nullable = false)
 	@NotNull(message = "UpdatedAt cannot be null")
 	private java.time.LocalDateTime updatedAt;
-	
+	@ManyToOne
+	@JoinColumn(name = "verification_status_user_id")
+	private VerificationStatusUser verificationStatusUser;
+
 
 }
