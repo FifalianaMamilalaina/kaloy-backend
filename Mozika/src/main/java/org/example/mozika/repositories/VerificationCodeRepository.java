@@ -5,6 +5,7 @@ import org.example.mozika.models.VerificationCode;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
+import java.util.Optional;
 import org.example.mozika.models.User;
 
 
@@ -13,6 +14,6 @@ public interface VerificationCodeRepository extends JpaRepository<VerificationCo
 
 List<VerificationCode> findByUseridUsers(User useridUsers);
 
-
+    Optional<VerificationCode> findTopByUseridUsersOrderByCreatedAtDesc(User useridUsers);
 
 }
