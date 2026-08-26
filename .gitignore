@@ -1,0 +1,8 @@
+# Fichiers compilés Java
+Mozika/target/
+*.class
+
+# Fichiers de build Maven
+*.jar
+*.war
+*.ear
