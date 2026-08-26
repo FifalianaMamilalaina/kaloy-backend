@@ -4,6 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.example.mozika.models.VerificationChannel;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface VerificationChannelRepository extends JpaRepository<VerificationChannel, Long>, JpaSpecificationExecutor<VerificationChannel> {
+import java.util.Optional;
 
+public interface VerificationChannelRepository extends JpaRepository<VerificationChannel, Long>, JpaSpecificationExecutor<VerificationChannel> {
+    Optional<VerificationChannel> findByName(String name);
 }
