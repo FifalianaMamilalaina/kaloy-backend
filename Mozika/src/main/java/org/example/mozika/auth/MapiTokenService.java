@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Service
 public class MapiTokenService {
@@ -44,6 +43,28 @@ public class MapiTokenService {
     }
 
     private void authenticate() {
+        try {
+            doLogin();
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            // MAPI code 99 = session encore active (ex : redémarrage serveur sans logout)
+            if (msg.contains("encore en cours de session") || msg.contains("\"code\":99") || msg.contains("code\": 99")) {
+                log.warn("Session MAPI encore active, tentative de logout puis reconnexion...");
+                tryLogout();
+                try {
+                    doLogin();
+                } catch (Exception e2) {
+                    log.error("Authentification MAPI échouée après logout : {}", e2.getMessage());
+                    throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Service SMS indisponible");
+                }
+            } else {
+                log.error("Exception authentification MAPI [{}] : {}", e.getClass().getSimpleName(), msg);
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Service SMS indisponible");
+            }
+        }
+    }
+
+    private void doLogin() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -51,42 +72,53 @@ public class MapiTokenService {
         body.add("Username", username);
         body.add("Password", password);
 
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
         String loginUrl = baseUrl + "/authentication/login";
+        log.info("Tentative authentification MAPI → {}", loginUrl);
 
+        ResponseEntity<String> rawResponse = restTemplate.postForEntity(
+                loginUrl, new HttpEntity<>(body, headers), String.class);
+
+        log.info("Réponse MAPI status={} body={}", rawResponse.getStatusCode(), rawResponse.getBody());
+
+        if (!rawResponse.getStatusCode().is2xxSuccessful() || rawResponse.getBody() == null) {
+            throw new RuntimeException("MAPI auth échouée, status=" + rawResponse.getStatusCode()
+                    + " body=" + rawResponse.getBody());
+        }
+
+        String responseBody = rawResponse.getBody();
+        String token = extractJsonField(responseBody, "token");
+        if (token == null) token = extractJsonField(responseBody, "accessToken");
+        if (token == null) token = extractJsonField(responseBody, "access_token");
+        if (token == null) token = extractJsonField(responseBody, "data");
+
+        if (token == null) {
+            log.error("Token introuvable dans la réponse MAPI : {}", responseBody);
+            throw new RuntimeException("Token MAPI introuvable dans la réponse");
+        }
+
+        cachedToken = token;
+        // 840s = 14 min, légèrement inférieur aux 900s de MAPI pour éviter les conflits de session
+        tokenExpiresAt = LocalDateTime.now().plusSeconds(840);
+        log.info("Token MAPI obtenu, valide jusqu'à {}", tokenExpiresAt);
+    }
+
+    private void tryLogout() {
         try {
-            log.info("Tentative authentification MAPI → {}", loginUrl);
-            ResponseEntity<String> rawResponse = restTemplate.postForEntity(loginUrl, request, String.class);
-
-            log.info("Réponse MAPI status={} body={}", rawResponse.getStatusCode(), rawResponse.getBody());
-
-            if (!rawResponse.getStatusCode().is2xxSuccessful() || rawResponse.getBody() == null) {
-                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                        "MAPI auth échouée, status=" + rawResponse.getStatusCode());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            if (cachedToken != null) {
+                headers.setBearerAuth(cachedToken);
             }
-
-            // Parser le JSON manuellement pour éviter les problèmes de désérialisation
-            String responseBody = rawResponse.getBody();
-            String token = extractJsonField(responseBody, "token");
-            if (token == null) token = extractJsonField(responseBody, "accessToken");
-            if (token == null) token = extractJsonField(responseBody, "access_token");
-            if (token == null) token = extractJsonField(responseBody, "data");
-
-            if (token == null) {
-                log.error("Token introuvable dans la réponse MAPI : {}", responseBody);
-                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                        "Service SMS indisponible — token introuvable");
-            }
-
-            cachedToken = token;
-            tokenExpiresAt = LocalDateTime.now().plusSeconds(900);
-            log.info("Token MAPI obtenu, valide jusqu'à {}", tokenExpiresAt);
-
-        } catch (ResponseStatusException e) {
-            throw e;
+            String logoutUrl = baseUrl + "/authentication/logout";
+            log.info("Tentative logout MAPI → {}", logoutUrl);
+            restTemplate.postForEntity(logoutUrl,
+                    new HttpEntity<>(new LinkedMultiValueMap<>(), headers), String.class);
+            log.info("Logout MAPI effectué");
         } catch (Exception e) {
-            log.error("Exception authentification MAPI [{}] : {}", e.getClass().getSimpleName(), e.getMessage());
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Service SMS indisponible");
+            log.warn("Logout MAPI échoué (ignoré) : {}", e.getMessage());
+        } finally {
+            cachedToken = null;
+            tokenExpiresAt = null;
         }
     }
 

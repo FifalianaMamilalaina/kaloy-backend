@@ -68,7 +68,14 @@ public class DefaultAuthService implements AuthService {
     @Transactional
     public RegisterResponse registerClient(RegisterClientRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Un compte avec cet email existe déjà");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cette adresse e-mail est déjà associée à un compte. Veuillez en utiliser une autre ou vous connecter à votre compte existant.");
+        }
+
+        if (request.getPhone() != null && !request.getPhone().isBlank()
+                && userRepository.findByPhone(request.getPhone()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Ce numéro est déjà utilisé. Merci d'en choisir un autre ou de vous connecter..");
         }
 
         UserRole role = userRoleRepository.findByName("CLIENT")
@@ -142,6 +149,7 @@ public class DefaultAuthService implements AuthService {
 
         User user = new User();
         user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRoleidUserRoles(role);
         user.setStatusidUserStatuses(status);

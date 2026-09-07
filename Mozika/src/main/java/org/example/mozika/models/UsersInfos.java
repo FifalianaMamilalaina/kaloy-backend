@@ -28,6 +28,9 @@ public class UsersInfos {
     @Size(max = 255)
     private String userName;
 
+    @Column(name = "photo_url")
+    private String photoUrl;
+
     @ManyToOne
     @JoinColumn(name = "id_user")
     @NotNull(message = "User cannot be null")
