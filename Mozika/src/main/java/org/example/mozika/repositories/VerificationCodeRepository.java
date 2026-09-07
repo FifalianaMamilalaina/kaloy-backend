@@ -16,4 +16,7 @@ List<VerificationCode> findByUseridUsers(User useridUsers);
 
     Optional<VerificationCode> findTopByUseridUsersOrderByCreatedAtDesc(User useridUsers);
 
+    Optional<VerificationCode> findTopByUseridUsersAndChannelidVerificationChannelsNameAndConsumedAtIsNullOrderByCreatedAtDesc(
+            User useridUsers, String channelName);
+
 }
