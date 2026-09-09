@@ -14,3 +14,6 @@ ALTER TABLE "songs" ADD COLUMN IF NOT EXISTS "playback_url" TEXT;
 
 -- 4. S'assurer que audio_url est bien NOT NULL (car une chanson doit avoir au moins un audio)
 ALTER TABLE "songs" ALTER COLUMN "audio_url" SET NOT NULL;
+
+UPDATE songs SET audio_url = 'Izay.mp3' WHERE id = 1;
+SELECT id, title, audio_url FROM songs WHERE id = 1;
