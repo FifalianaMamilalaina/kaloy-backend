@@ -49,6 +49,8 @@ import venueRoutes from './entities/venueRoutes'
 import verificationChannelRoutes from './entities/verificationChannelRoutes'
 import verificationCodeRoutes from './entities/verificationCodeRoutes'
 import verificationStatuseRoutes from './entities/verificationStatuseRoutes'
+import authRoutes from './authRoutes'
+import AccountView from '@/views/account/AccountView.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -61,6 +63,7 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       { path: 'home', name: 'home', component: HomeView },
       { path: 'settings', name: 'settings', component: SettingsView },
+      { path: 'account', name: 'account', component: AccountView },
       ...albumRoutes,
       ...artistGroupMemberRoutes,
       ...artistTypeRoutes,
@@ -109,6 +112,7 @@ const routes: Array<RouteRecordRaw> = [
       ...verificationStatuseRoutes,
     ],
   },
+  ...authRoutes,
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

@@ -7,6 +7,16 @@ const instance = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+instance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers = config.headers ?? {}
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 export default function api<T>() {
   async function request(config: AxiosRequestConfig): Promise<RestResponse<T>> {
     try {
