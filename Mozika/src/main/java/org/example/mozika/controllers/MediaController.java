@@ -3,6 +3,7 @@ package org.example.mozika.controllers;
 import lombok.RequiredArgsConstructor;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.models.dto.MediaStreamUrlsDto;
+import org.example.mozika.models.dto.SongPlayerDto;
 import org.example.mozika.services.interfaces.MediaService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,15 @@ public class MediaController {
         MediaStreamUrlsDto dto = mediaService.getSongStreamUrls(songId);
         return ResponseEntity.ok(
                 RestResponse.buildSuccessResponse(HttpStatus.OK, "URLs média générées avec succès", dto)
+        );
+    }
+
+    @GetMapping("/songs/{songId}/player")
+    public ResponseEntity<RestResponse<SongPlayerDto>> getSongPlayerDetails(
+            @PathVariable Long songId) {
+        SongPlayerDto dto = mediaService.getSongPlayerDetails(songId);
+        return ResponseEntity.ok(
+                RestResponse.buildSuccessResponse(HttpStatus.OK, "Détails du lecteur récupérés avec succès", dto)
         );
     }
 }
