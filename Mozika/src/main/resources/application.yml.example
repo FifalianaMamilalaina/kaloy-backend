@@ -5,7 +5,8 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/musical_app
     username: postgres
-    password: 3198
+    password: CHANGE_ME
+
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -20,8 +21,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: antoniabijourasoarimalala@gmail.com
-    password: kadd ohmz ltfx ahnw
+    username: CHANGE_ME
+    password: CHANGE_ME
     properties:
       mail:
         smtp:
@@ -30,28 +31,22 @@ spring:
             enable: true
             required: true
 
-
 server:
   port: 8087
   servlet:
     context-path: /mozika
 
-# Logs Configuration
 logging:
   level:
-    root: INFO                      
-    org.mozika: DEBUG              
-    org.hibernate.SQL: DEBUG       
-    org.hibernate.type.descriptor.sql.BasicBinder:
-
-
-
-
+    root: INFO
+    org.mozika: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 mapi:
   base-url: https://messaging.mapi.mg/api
-  username: kaloy123
-  password: "hZ7Z8zrP:4.!9Rj"
+  username: CHANGE_ME
+  password: CHANGE_ME
   sender-id: KALOY
 
 app:
@@ -59,5 +54,5 @@ app:
     column-visibility:
       file: ${user.dir}/config/column-visibility.json
   jwt:
-    secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
+    secret: CHANGE_ME
     expiration-ms: 86400000

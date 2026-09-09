@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import org.example.mozika.security.AuthContext;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -86,7 +88,8 @@ import java.util.List;
 @RequestMapping("/users")
 @Tag(name = "User", description = "User Management APIs")
 public class UserController  {
-	private final UserService userService;
+private final AuthContext authContext;
+private final UserService userService;
 private final ArtistService artistService;
 private final ClientService clientService;
 private final CommentService commentService;
