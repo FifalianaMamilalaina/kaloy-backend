@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Setter
 @Getter
@@ -27,6 +28,7 @@ public class User  {
 	@Column(name="password_hash", unique = false, nullable = false)
 	@NotNull(message = "PasswordHash cannot be null")
 	@Size(max = 255)
+	@JsonIgnore
 	private String passwordHash;
 	@ManyToOne
 	@JoinColumn(name="role_id")
@@ -42,9 +44,11 @@ public class User  {
 	@Column(name="updated_at", unique = false, nullable = false)
 	@NotNull(message = "UpdatedAt cannot be null")
 	private java.time.LocalDateTime updatedAt;
+
 	@ManyToOne
 	@JoinColumn(name = "verification_status_user_id")
 	private VerificationStatusUser verificationStatusUser;
+
 
 
 }

@@ -768,3 +768,28 @@ IS 'La cible est identifiée par target_type_id + target_id.';
 -- ============================================================
 -- FIN DU SCRIPT
 -- ============================================================
+
+
+-- 1. Rôles utilisateur
+INSERT INTO user_roles (name) VALUES ('CLIENT'), ('ARTIST'), ('ADMIN');
+
+-- 2. Statuts de compte
+INSERT INTO user_statuses (name) VALUES ('pending'), ('active'), ('suspended');
+
+-- 3. Types d'artiste
+INSERT INTO artist_types (name) VALUES ('solo'), ('group');
+
+-- 4. Statuts de vérification (artiste)
+INSERT INTO verification_statuses (name) VALUES ('pending'), ('validated'), ('rejected');
+
+-- 5. Canaux de vérification OTP
+INSERT INTO verification_channels (name) VALUES ('email'), ('sms');
+
+-- 6. Statuts des membres de groupe
+INSERT INTO member_statuses (name) VALUES ('active'), ('former');
+
+-- 7. Types de notification
+INSERT INTO notification_types (name) VALUES ('NEW_RELEASE'), ('NEW_EVENT'), ('COMMENT_REPLY'), ('EVENT_INVITATION');
+
+-- 8. Statuts de soumission (pipeline .zip)
+INSERT INTO submission_statuses (name) VALUES ('pending'), ('processing'), ('done'), ('error');
