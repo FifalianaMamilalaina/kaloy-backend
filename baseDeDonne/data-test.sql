@@ -59,3 +59,20 @@ WHERE email = 'artistetest@yopmail.com';
 SELECT email, email_verified_at, verification_status_user_id 
 FROM "users" 
 WHERE email = 'artistetest@yopmail.com';
+
+UPDATE "songs"
+SET 
+    "audio_url" = 'Eh sambatra sy tretrika - Vetsonkira(M4A_128K)-audio.m4a',
+    "video_url" = 'https://youtu.be/xqFnnCB6vIo?si=fJPWsBvhEQyW4enb',
+    "karaoke_audio_url" = 'Eh sambatra sy tretrika-Vetsonkira( Karaoké)(720P_HD).mp4',
+    "playback_url" = 'Eh sambatra sy tretrika-Vetsonkira Playback(M4A_128K).m4a',
+    "solfa_url" = 'solfa.pdf',
+    "title" = 'Eh sambatra sy tretrika',
+    "author_composer" = 'Vetsonkira',
+    "duration_seconds" = 215,
+    "language" = 'mg'
+WHERE id = 1;
+
+-- Vérification
+SELECT id, title, audio_url, video_url, karaoke_audio_url, playback_url, solfa_url 
+FROM songs WHERE id = 1;

@@ -17,6 +17,12 @@ public class MinioStorageService implements StorageService {
 
     private final MinioClient minioClient;
 
+    @Value("${minio.endpoint}")
+    private String minioEndpoint;
+
+    @Value("${minio.public-url}")
+    private String minioPublicUrl;
+
     @Value("${minio.bucket}")
     private String bucket;
 
@@ -29,7 +35,7 @@ public class MinioStorageService implements StorageService {
             return null;
         }
         try {
-            return minioClient.getPresignedObjectUrl(
+            String url = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .bucket(bucket)
                             .object(objectName)
@@ -37,6 +43,8 @@ public class MinioStorageService implements StorageService {
                             .expiry(expiryDays, TimeUnit.DAYS)
                             .build()
             );
+            // SDK génère l'URL avec localhost:9000 — on remplace par l'URL publique LocalTunnel
+            return url.replace(minioEndpoint, minioPublicUrl);
         } catch (Exception e) {
             throw new InternalServerErrorException(
                     "Erreur lors de la génération de l'URL pour : " + objectName, e

@@ -10,6 +10,7 @@ import org.example.mozika.models.dto.SongPlayerDto;
 import org.example.mozika.repositories.SongRepository;
 import org.example.mozika.services.interfaces.MediaService;
 import org.example.mozika.services.interfaces.StorageService;
+import org.example.mozika.utils.YouTubeUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,7 +27,7 @@ public class DefaultMediaService implements MediaService {
 
         MediaStreamUrlsDto dto = new MediaStreamUrlsDto();
         dto.setAudioStreamUrl(storageService.getPresignedUrl(song.getAudioUrl()));
-        dto.setVideoStreamUrl(storageService.getPresignedUrl(song.getVideoUrl()));
+        dto.setVideoStreamUrl(resolveVideoUrl(song.getVideoUrl()));
         dto.setKaraokeStreamUrl(storageService.getPresignedUrl(song.getKaraokeAudioUrl()));
         dto.setPlaybackStreamUrl(storageService.getPresignedUrl(song.getPlaybackUrl()));
         dto.setSolfaUrl(storageService.getPresignedUrl(song.getSolfaUrl()));
@@ -70,11 +71,20 @@ public class DefaultMediaService implements MediaService {
 
         // URLs presignées MinIO (valides 7 jours)
         dto.setAudioStreamUrl(storageService.getPresignedUrl(song.getAudioUrl()));
-        dto.setVideoStreamUrl(storageService.getPresignedUrl(song.getVideoUrl()));
+        dto.setVideoStreamUrl(resolveVideoUrl(song.getVideoUrl()));
         dto.setKaraokeStreamUrl(storageService.getPresignedUrl(song.getKaraokeAudioUrl()));
         dto.setPlaybackStreamUrl(storageService.getPresignedUrl(song.getPlaybackUrl()));
         dto.setSolfaUrl(storageService.getPresignedUrl(song.getSolfaUrl()));
 
         return dto;
+    }
+
+    private String resolveVideoUrl(String rawVideoUrl) {
+        if (rawVideoUrl == null || rawVideoUrl.isBlank()) return null;
+        if (YouTubeUtils.isYouTubeUrl(rawVideoUrl)) {
+            String videoId = YouTubeUtils.extractVideoId(rawVideoUrl);
+            return videoId != null ? YouTubeUtils.getEmbedUrl(videoId) : null;
+        }
+        return storageService.getPresignedUrl(rawVideoUrl);
     }
 }
