@@ -13,7 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Random;
 
-@Service
+@Service("teammateDefaultAuthService")
 public class DefaultAuthService implements AuthService {
 
     private final UserRepository userRepository;

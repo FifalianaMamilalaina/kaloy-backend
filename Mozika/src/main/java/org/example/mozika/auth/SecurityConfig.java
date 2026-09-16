@@ -70,7 +70,7 @@ public class SecurityConfig {
         return source;
     }
 
-    @Bean
+    @Bean("teammateSecurityConfing")
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }

@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 
-@Service
+@Service("teammateMapiTokenService")
 public class MapiTokenService {
 
     private static final Logger log = LoggerFactory.getLogger(MapiTokenService.class);

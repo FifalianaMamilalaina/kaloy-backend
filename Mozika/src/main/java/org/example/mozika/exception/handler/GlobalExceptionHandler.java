@@ -63,20 +63,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
-    @ExceptionHandler(org.example.mozika.security.UnauthorizedException.class)
-    public ResponseEntity<RestResponse<Void>> handleUnauthorized(org.example.mozika.security.UnauthorizedException ex) {
-        RestResponse<Void> response = RestResponse.buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), null);
-        log.info("Unauthorized: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-    }
-
-    @ExceptionHandler(org.example.mozika.security.ForbiddenException.class)
-    public ResponseEntity<RestResponse<Void>> handleForbidden(org.example.mozika.security.ForbiddenException ex) {
-        RestResponse<Void> response = RestResponse.buildErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), null);
-        log.info("Forbidden: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-    }
-
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<RestResponse<Void>> handleIllegalStateException(IllegalStateException ex) {
         RestResponse<Void> response = RestResponse.buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null);
