@@ -9,8 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.servlet.http.HttpServletRequest;
-import org.example.mozika.security.AuthContext;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -88,7 +86,6 @@ import java.util.List;
 @RequestMapping("/users")
 @Tag(name = "User", description = "User Management APIs")
 public class UserController  {
-private final AuthContext authContext;
 private final UserService userService;
 private final ArtistService artistService;
 private final ClientService clientService;
@@ -145,43 +142,43 @@ private final VerificationCodeService verificationcodeService;
 	    )
 	})
 	@GetMapping
-	public ResponseEntity<RestResponse<Page<User>>> getAllUsers(
-	    @Parameter(description = "Page number (0-indexed)", example = "0")
-	    @RequestParam(defaultValue = "0") int page,
+	// public ResponseEntity<RestResponse<Page<User>>> getAllUsers(
+	//     @Parameter(description = "Page number (0-indexed)", example = "0")
+	//     @RequestParam(defaultValue = "0") int page,
 	
-	    @Parameter(description = "Size of the page", example = "10")
-	    @RequestParam(defaultValue = "10") int size,
+	//     @Parameter(description = "Size of the page", example = "10")
+	//     @RequestParam(defaultValue = "10") int size,
 	
-	    @Parameter(
-	        description = "Sorting criteria in the format: property,(asc|desc). "
-	                + "Multiple sort criteria can be passed using semicolon separator. "
-	                + "Example: id,asc;name,desc",
-	        example = "id,asc"
-	    )
-	    @RequestParam(defaultValue = "id,asc") String sortParam) {
+	//     @Parameter(
+	//         description = "Sorting criteria in the format: property,(asc|desc). "
+	//                 + "Multiple sort criteria can be passed using semicolon separator. "
+	//                 + "Example: id,asc;name,desc",
+	//         example = "id,asc"
+	//     )
+	//     @RequestParam(defaultValue = "id,asc") String sortParam) {
 	
-	    Sort sortObj = WebUtils.createSortObject(sortParam);
-	    Pageable pageable = PageRequest.of(page, size, sortObj);
-	    Page<User> users = userService.getAllUser(pageable);
+	//     Sort sortObj = WebUtils.createSortObject(sortParam);
+	//     Pageable pageable = PageRequest.of(page, size, sortObj);
+	//     Page<User> users = userService.getAllUser(pageable);
 	
-	    String message = "user retrieved successfully";
+	//     String message = "user retrieved successfully";
 	
-	    if(!users.hasContent()) {
-	            message = "No user found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	//     if(!users.hasContent()) {
+	//             message = "No user found";
+	//             throw new ResourceNotFoundException(message);
+	//     }
 	
-	    RestResponse<Page<User>> response = RestResponse.buildSuccessResponse(
-	            HttpStatus.OK,
-	            message,
-	            users
-	    );
-	    return ResponseEntity.status(HttpStatus.OK).body(response);
-	}
-	@Operation(
-	    summary = "Retrieve all user",
-	    description = "Get a paginated and sorted list of user items. Returns an empty list if no data is found."
-	)
+	//     RestResponse<Page<User>> response = RestResponse.buildSuccessResponse(
+	//             HttpStatus.OK,
+	//             message,
+	//             users
+	//     );
+	//     return ResponseEntity.status(HttpStatus.OK).body(response);
+	// }
+	// @Operation(
+	//     summary = "Retrieve all user",
+	//     description = "Get a paginated and sorted list of user items. Returns an empty list if no data is found."
+	// )
 	@ApiResponses({
 	    @ApiResponse(
 	        responseCode = "200",
@@ -194,44 +191,44 @@ private final VerificationCodeService verificationcodeService;
 	    )
 	})
 	@PostMapping("/search")
-	public ResponseEntity<RestResponse<Page<User>>> getAllUsers(
-	    @Parameter(description = "Page number (0-indexed)", example = "0")
-	    @RequestParam(defaultValue = "0") int page,
+	// public ResponseEntity<RestResponse<Page<User>>> getAllUsers(
+	//     @Parameter(description = "Page number (0-indexed)", example = "0")
+	//     @RequestParam(defaultValue = "0") int page,
 	
-	    @Parameter(description = "Size of the page", example = "10")
-	    @RequestParam(defaultValue = "10") int size,
+	//     @Parameter(description = "Size of the page", example = "10")
+	//     @RequestParam(defaultValue = "10") int size,
 	
-	    @Parameter(
-	        description = "Sorting criteria in the format: property,(asc|desc). "
-	                + "Multiple sort criteria can be passed using semicolon separator. "
-	                + "Example: id,asc;name,desc",
-	        example = "id,asc"
-	    )
-	    @RequestParam(defaultValue = "id,asc") String sortParam,
-	    @RequestBody UserSearch object) {
+	//     @Parameter(
+	//         description = "Sorting criteria in the format: property,(asc|desc). "
+	//                 + "Multiple sort criteria can be passed using semicolon separator. "
+	//                 + "Example: id,asc;name,desc",
+	//         example = "id,asc"
+	//     )
+	//     @RequestParam(defaultValue = "id,asc") String sortParam,
+	//     @RequestBody UserSearch object) {
 	
-	    Sort sortObj = WebUtils.createSortObject(sortParam);
-	    Pageable pageable = PageRequest.of(page, size, sortObj);
-	    Page<User> users = userService.getAllUser(pageable, object);
+	//     Sort sortObj = WebUtils.createSortObject(sortParam);
+	//     Pageable pageable = PageRequest.of(page, size, sortObj);
+	//     Page<User> users = userService.getAllUser(pageable, object);
 	
-	    String message = "user retrieved successfully";
+	//     String message = "user retrieved successfully";
 	
-	    if(!users.hasContent()) {
-	            message = "No user found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	//     if(!users.hasContent()) {
+	//             message = "No user found";
+	//             throw new ResourceNotFoundException(message);
+	//     }
 	
-	    RestResponse<Page<User>> response = RestResponse.buildSuccessResponse(
-	            HttpStatus.OK,
-	            message,
-	            users
-	    );
-	    return ResponseEntity.status(HttpStatus.OK).body(response);
-	}
-	@Operation(
-	    summary = "Get user by ID",
-	    description = "Retrieve a specific user item by its ID"
-	)
+	//     RestResponse<Page<User>> response = RestResponse.buildSuccessResponse(
+	//             HttpStatus.OK,
+	//             message,
+	//             users
+	//     );
+	//     return ResponseEntity.status(HttpStatus.OK).body(response);
+	// }
+	// @Operation(
+	//     summary = "Get user by ID",
+	//     description = "Retrieve a specific user item by its ID"
+	// )
 	@ApiResponses({
 	    @ApiResponse(
 	        responseCode = "200",
