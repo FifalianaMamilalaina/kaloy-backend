@@ -12,6 +12,9 @@ import org.example.mozika.services.interfaces.MediaService;
 import org.example.mozika.services.interfaces.StorageService;
 import org.example.mozika.utils.YouTubeUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import io.minio.GetObjectResponse;
+import io.minio.StatObjectResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -20,16 +23,19 @@ public class DefaultMediaService implements MediaService {
     private final SongRepository songRepository;
     private final StorageService storageService;
 
+    @Value("${app.media-base-url:http://172.16.0.26:8087/mozika}")
+    private String mediaBaseUrl;
+
     @Override
     public MediaStreamUrlsDto getSongStreamUrls(Long songId) {
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new ResourceNotFoundException("Song introuvable avec l'id : " + songId));
 
         MediaStreamUrlsDto dto = new MediaStreamUrlsDto();
-        dto.setAudioStreamUrl(storageService.getPresignedUrl(song.getAudioUrl()));
+        dto.setAudioStreamUrl(streamUrl(songId, "audio"));
         dto.setVideoStreamUrl(resolveVideoUrl(song.getVideoUrl()));
-        dto.setKaraokeStreamUrl(storageService.getPresignedUrl(song.getKaraokeAudioUrl()));
-        dto.setPlaybackStreamUrl(storageService.getPresignedUrl(song.getPlaybackUrl()));
+        dto.setKaraokeStreamUrl(streamUrl(songId, "karaoke"));
+        dto.setPlaybackStreamUrl(streamUrl(songId, "playback"));
         dto.setSolfaUrl(storageService.getPresignedUrl(song.getSolfaUrl()));
         return dto;
     }
@@ -69,22 +75,48 @@ public class DefaultMediaService implements MediaService {
             dto.setAlbumReleaseDate(album.getReleaseDate());
         }
 
-        // URLs presignées MinIO (valides 7 jours)
-        dto.setAudioStreamUrl(storageService.getPresignedUrl(song.getAudioUrl()));
+        // Le mobile lit via le backend, sans accès direct au port MinIO.
+        dto.setAudioStreamUrl(streamUrl(songId, "audio"));
         dto.setVideoStreamUrl(resolveVideoUrl(song.getVideoUrl()));
-        dto.setKaraokeStreamUrl(storageService.getPresignedUrl(song.getKaraokeAudioUrl()));
-        dto.setPlaybackStreamUrl(storageService.getPresignedUrl(song.getPlaybackUrl()));
+        dto.setKaraokeStreamUrl(streamUrl(songId, "karaoke"));
+        dto.setPlaybackStreamUrl(streamUrl(songId, "playback"));
         dto.setSolfaUrl(storageService.getPresignedUrl(song.getSolfaUrl()));
 
         return dto;
     }
 
     private String resolveVideoUrl(String rawVideoUrl) {
-        if (rawVideoUrl == null || rawVideoUrl.isBlank()) return null;
+        if (rawVideoUrl == null || rawVideoUrl.isBlank())
+            return null;
         if (YouTubeUtils.isYouTubeUrl(rawVideoUrl)) {
             String videoId = YouTubeUtils.extractVideoId(rawVideoUrl);
             return videoId != null ? YouTubeUtils.getEmbedUrl(videoId) : null;
         }
         return storageService.getPresignedUrl(rawVideoUrl);
+    }
+
+    private String streamUrl(Long songId, String mediaType) {
+        return mediaBaseUrl + "/media/songs/" + songId + "/stream/" + mediaType;
+    }
+
+    @Override
+    public Song getSong(Long songId) {
+        return songRepository.findById(songId)
+                .orElseThrow(() -> new ResourceNotFoundException("Song introuvable avec l'id : " + songId));
+    }
+
+    @Override
+    public StatObjectResponse statObject(String objectName) {
+        return storageService.statObject(objectName);
+    }
+
+    @Override
+    public GetObjectResponse openObject(String objectName) {
+        return storageService.getObject(objectName);
+    }
+
+    @Override
+    public GetObjectResponse openObject(String objectName, long offset, long length) {
+        return storageService.getObject(objectName, offset, length);
     }
 }
