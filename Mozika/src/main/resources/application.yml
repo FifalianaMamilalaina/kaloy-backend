@@ -61,3 +61,11 @@ app:
   jwt:
     secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
     expiration-ms: 86400000
+
+minio:
+  endpoint: http://172.22.32.1:9000
+  public-url: http://172.16.0.26:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: kaloy-media
+  presigned-url-expiry-days: 7

@@ -49,27 +49,28 @@ public class Song  {
 	@JoinColumn(name="storage_type_id")
 	@NotNull(message = "StorageTypeId cannot be null")
 	private AudioStorageType storagetypeidAudioStorageTypes;
-	@Column(name="audio_url", unique = false, nullable = true)
+	@Column(name="audio_url", unique = false, nullable = false)
+	@NotNull(message = "AudioUrl cannot be null")
 	@Size(max = 2147483647)
 	private String audioUrl;
-	@Column(name="audio_file", unique = false, nullable = true)
-	private byte[] audioFile;
 	@Column(name="video_url", unique = false, nullable = true)
 	@Size(max = 2147483647)
 	private String videoUrl;
-	@Column(name="karaoke_audio", unique = false, nullable = true)
-	private byte[] karaokeAudio;
+	@Column(name="karaoke_audio_url", unique = false, nullable = true)
+	@Size(max = 2147483647)
+	private String karaokeAudioUrl;
 	@Column(name="lyrics", unique = false, nullable = true)
 	@Size(max = 2147483647)
 	private String lyrics;
 	@Column(name="lyrics_sync_data", unique = false, nullable = true)
 	@org.hibernate.annotations.ColumnTransformer(read = "CAST(lyrics_sync_data as varchar)", write = "CAST(? as jsonb)")
 	private String lyricsSyncData;
-	@Column(name="solfa", unique = false, nullable = true)
+	@Column(name="solfa_url", unique = false, nullable = true)
 	@Size(max = 2147483647)
-	private String solfa;
-	@Column(name="playback", unique = false, nullable = true)
-	private byte[] playback;
+	private String solfaUrl;
+	@Column(name="playback_url", unique = false, nullable = true)
+	@Size(max = 2147483647)
+	private String playbackUrl;
 	@Column(name="is_downloadable", unique = false, nullable = false)
 	@NotNull(message = "IsDownloadable cannot be null")
 	private Boolean isDownloadable;
