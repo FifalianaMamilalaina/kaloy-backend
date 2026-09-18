@@ -63,6 +63,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<RestResponse<Void>> handleIllegalStateException(IllegalStateException ex) {
+        RestResponse<Void> response = RestResponse.buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null);
+        log.info("Illegal state: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     private String resolveDuplicateFieldMessage(DataIntegrityViolationException ex) {
         String rootMessage = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage()
                 : ex.getMessage();
@@ -79,5 +86,4 @@ public class GlobalExceptionHandler {
         }
         return "Un compte existe déjà avec ces informations. Veuillez vous connecter ou en utiliser d'autres.";
     }
-
 }

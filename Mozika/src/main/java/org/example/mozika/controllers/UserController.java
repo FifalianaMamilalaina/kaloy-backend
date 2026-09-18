@@ -86,7 +86,7 @@ import java.util.List;
 @RequestMapping("/users")
 @Tag(name = "User", description = "User Management APIs")
 public class UserController  {
-	private final UserService userService;
+private final UserService userService;
 private final ArtistService artistService;
 private final ClientService clientService;
 private final CommentService commentService;
