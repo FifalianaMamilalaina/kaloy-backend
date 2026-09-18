@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: mozika
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/musical_app
+    username: postgres
+    password: CHANGE_ME
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate.format_sql: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: CHANGE_ME
+    password: CHANGE_ME
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+server:
+  port: 8087
+  servlet:
+    context-path: /mozika
+
+logging:
+  level:
+    root: INFO
+    org.mozika: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+mapi:
+  base-url: https://messaging.mapi.mg/api
+  username: CHANGE_ME
+  password: CHANGE_ME
+  sender-id: KALOY
+
+app:
+  config:
+    column-visibility:
+      file: ${user.dir}/config/column-visibility.json
+  jwt:
+    secret: CHANGE_ME
+    expiration-ms: 86400000
