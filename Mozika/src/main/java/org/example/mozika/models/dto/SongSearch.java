@@ -39,13 +39,12 @@ public class SongSearch {
 	private AudioStorageType storagetypeidAudioStorageTypes;
 	
 	private String audioUrl;
-	private byte[] audioFile;
 	private String videoUrl;
-	private byte[] karaokeAudio;
+	private String karaokeAudioUrl;
 	private String lyrics;
 	private String lyricsSyncData;
-	private String solfa;
-	private byte[] playback;
+	private String solfaUrl;
+	private String playbackUrl;
 	private Boolean isDownloadable;
 	private java.time.LocalDateTime createdAt;
 	private java.time.LocalDateTime createdAtMin;
