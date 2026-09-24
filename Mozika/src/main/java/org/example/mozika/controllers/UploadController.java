@@ -37,15 +37,22 @@ public class UploadController {
     @Value("${kaloy.uploads.url-publique}")
     private String urlPublique;
 
-    /** Un seul format d'image par extension acceptee. */
-    private static final Map<String, String> EXTENSIONS_AUTORISEES = Map.of(
-            "image/jpeg", ".jpg",
-            "image/png", ".png",
-            "image/webp", ".webp"
+    /**
+     * Une seule extension par type accepte. Images pour les pochettes et la
+     * galerie ; audio, video et PDF pour le pipeline d'ingestion (Sprint 8-9).
+     */
+    private static final Map<String, String> EXTENSIONS_AUTORISEES = Map.ofEntries(
+            Map.entry("image/jpeg", ".jpg"),
+            Map.entry("image/png", ".png"),
+            Map.entry("image/webp", ".webp"),
+            Map.entry("audio/mpeg", ".mp3"),
+            Map.entry("audio/mp3", ".mp3"),
+            Map.entry("video/mp4", ".mp4"),
+            Map.entry("application/pdf", ".pdf")
     );
 
-    /** 25 Mo, en accord avec spring.servlet.multipart.max-file-size. */
-    private static final long TAILLE_MAX = 25L * 1024L * 1024L;
+    /** 200 Mo : un MP3 d'album ou un clip MP4 depassent largement 25 Mo. */
+    private static final long TAILLE_MAX = 200L * 1024L * 1024L;
 
     @Operation(
             summary = "Envoyer un fichier",
@@ -60,7 +67,7 @@ public class UploadController {
         if (fichier.getSize() > TAILLE_MAX) {
             return ResponseEntity.badRequest().body(
                     RestResponse.buildErrorResponse(HttpStatus.BAD_REQUEST,
-                            "Fichier trop volumineux (25 Mo maximum)", null));
+                            "Fichier trop volumineux (200 Mo maximum)", null));
         }
 
         // On se fie au type declare, mais on ne garde que les formats connus :
@@ -71,7 +78,7 @@ public class UploadController {
         if (extension == null) {
             return ResponseEntity.badRequest().body(
                     RestResponse.buildErrorResponse(HttpStatus.BAD_REQUEST,
-                            "Format non supporte : " + typeMime + " (JPEG, PNG ou WebP attendus)", null));
+                            "Format non supporte : " + typeMime + " (JPEG, PNG, WebP, MP3, MP4 ou PDF attendus)", null));
         }
 
         try {
