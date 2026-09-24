@@ -1,5 +1,6 @@
 package org.example.mozika.auth;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -54,6 +55,10 @@ public class SecurityConfig {
                                 "/editorialplaylists/**",
                                 "/events/**", "/media/songs/*/stream/**")
                         .permitAll()
+                        // Lecture des photos envoyees : les images sont chargees
+                        // par le composant d'affichage, qui ne porte pas le jeton.
+                        // L'envoi (POST /uploads) reste protege.
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

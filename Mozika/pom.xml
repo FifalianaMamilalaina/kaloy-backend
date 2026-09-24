@@ -82,6 +82,14 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/x
             <version>42.7.3</version>
         </dependency>
 
+        <!-- Le code (MinioConfig, MediaService, StorageService) importe io.minio
+             mais la dependance manquait : le projet ne compilait pas. -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.17</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
