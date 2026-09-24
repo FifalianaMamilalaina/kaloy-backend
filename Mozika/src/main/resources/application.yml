@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/musical_app
     username: postgres
-    password: postgres
+    password: Fifaliana!
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -16,6 +16,51 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+
+  # Une photo de telephone depasse largement le plafond par defaut de Spring (1 Mo).
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: antoniabijourasoarimalala@gmail.com
+    password: kadd ohmz ltfx ahnw
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+# MinioConfig exige ces proprietes pour demarrer. Aucun serveur MinIO ne tourne
+# ici : les valeurs permettent de construire le bean sans se connecter. Les
+# envois depuis l'application passent par le stockage disque ci-dessous.
+minio:
+  endpoint: http://localhost:9000
+  public-url: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: kaloy
+  presigned-url-expiry-days: 7
+
+# Valeurs reprises de kaloy-backend-main, le backend qui demarrait : elles
+# manquaient ici et empechaient le demarrage (app.jwt.secret introuvable).
+mapi:
+  base-url: https://messaging.mapi.mg/api
+  username: kaloy123
+  password: "hZ7Z8zrP:4.!9Rj"
+  sender-id: KALOY
+
+kaloy:
+  uploads:
+    # Dossier ou sont ecrits les fichiers envoyes, et adresse publique servant
+    # a les relire. 10.0.2.2 est l'alias de l'hote vu depuis l'emulateur Android.
+    dossier: ${user.dir}/uploads
+    url-publique: http://10.0.2.2:8087/mozika/uploads
 
 
 
@@ -38,3 +83,6 @@ app:
   config:
     column-visibility:
       file: ${user.dir}/config/column-visibility.json
+  jwt:
+    secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
+    expiration-ms: 86400000
