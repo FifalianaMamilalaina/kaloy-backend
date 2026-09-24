@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: kaloy-ingestion
+
+  # Aucun serveur n'est demarre : ce module consomme des files et appelle l'API.
+  main:
+    web-application-type: none
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: antoniabijourasoarimalala@gmail.com
+    password: kadd ohmz ltfx ahnw
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+kaloy:
+  ingestion:
+    # Dossier surveille : les artistes y deposent leurs archives .zip.
+    depot: ${user.dir}/depot
+    # Dossier de travail ou les archives sont extraites.
+    travail: ${user.dir}/travail
+    # Intervalle de surveillance, en millisecondes.
+    intervalle-scan-ms: 5000
+
+    api:
+      base-url: http://localhost:8087/mozika
+      # Compte de service utilise pour publier. Il doit exister en base et
+      # etre verifie (VERIFIED), sans quoi la connexion renvoie 403.
+      email: artist@dev.com
+      mot-de-passe: password123
+
+    notifications:
+      # Desactivees par defaut : la configuration SMTP pointe sur un vrai
+      # compte, on n'envoie pas de courriels pendant les tests.
+      actives: false
+      destinataire: antoniabijourasoarimalala@gmail.com
+
+logging:
+  level:
+    root: INFO
+    org.example.kaloy.ingestion: DEBUG
