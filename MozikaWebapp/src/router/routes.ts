@@ -51,6 +51,7 @@ import verificationCodeRoutes from './entities/verificationCodeRoutes'
 import verificationStatuseRoutes from './entities/verificationStatuseRoutes'
 import authRoutes from './authRoutes'
 import AccountView from '@/views/account/AccountView.vue'
+import SongDetailPage from '@/views/SongDetailPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -64,6 +65,9 @@ const routes: Array<RouteRecordRaw> = [
       { path: 'home', name: 'home', component: HomeView },
       { path: 'settings', name: 'settings', component: SettingsView },
       { path: 'account', name: 'account', component: AccountView },
+      // Page « Lecteur » : détail d'une chanson (ouverte depuis l'accueil)
+      // Chemin volontairement différent de /songs/... pour ne pas entrer en conflit avec songRoutes
+      { path: 'lecteur/:id', name: 'song-detail', component: SongDetailPage },
       ...albumRoutes,
       ...artistGroupMemberRoutes,
       ...artistTypeRoutes,
