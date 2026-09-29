@@ -1019,5 +1019,57 @@ try {
 }
 }
 
+@Operation(
+  summary = "Get an artist's most played songs",
+  description = "Returns the artist's songs ordered by play count, most played first. "
+    + "Songs never played are still returned, after the others, most recent first."
+)
+@ApiResponses({
+  @ApiResponse(responseCode = "200", description = "Songs retrieved successfully"),
+  @ApiResponse(responseCode = "404", description = "Artist not found with the provided ID"),
+  @ApiResponse(responseCode = "500", description = "Internal server error")
+})
+@GetMapping("/{id}/top-songs")
+public ResponseEntity<?> getTopSongsByArtist(
+  @Parameter(description = "ID of the artist", required = true)
+  @PathVariable Long id,
+  @Parameter(description = "Maximum number of songs to return", required = false)
+  @RequestParam(defaultValue = "5") int limit
+) {
+try {
+  Artist artist = artistService.getArtistById(id);
+  if (artist == null) {
+    RestResponse<String> errorResponse = RestResponse.buildErrorResponse(
+      HttpStatus.NOT_FOUND,
+      String.format("Artist not found with id: %s", id),
+      null
+    );
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+  }
+
+  // Borne haute : une limite fournie par l'appelant ne doit pas permettre
+  // de rapatrier tout le catalogue en une requete.
+  int limite = Math.max(1, Math.min(limit, 50));
+
+  RestResponse<java.util.List<Song>> response = RestResponse.buildSuccessResponse(
+    HttpStatus.OK,
+    "Most played songs retrieved successfully",
+    songService.getChansonsLesPlusEcoutees(id, limite)
+  );
+  return ResponseEntity.ok(response);
+} catch (ResourceNotFoundException ex) {
+  RestResponse<String> errorResponse = RestResponse.buildErrorResponse(
+    HttpStatus.NOT_FOUND, ex.getMessage(), null);
+  return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+} catch (Exception ex) {
+  RestResponse<String> errorResponse = RestResponse.buildErrorResponse(
+    HttpStatus.INTERNAL_SERVER_ERROR,
+    String.format("Error while retrieving most played songs: %s", ex.getMessage()),
+    null
+  );
+  return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+}
+}
+
 
 }
