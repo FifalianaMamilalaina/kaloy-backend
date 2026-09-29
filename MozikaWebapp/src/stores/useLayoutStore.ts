@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
 export const useLayoutStore = defineStore('layout', () => {
-  const currentLayout = ref(localStorage.getItem('layoutMode') || 'sidebar')
+  const currentLayout = ref(localStorage.getItem('layoutMode') || 'topbar')
 
   function setLayout(mode: 'sidebar' | 'topbar') {
     currentLayout.value = mode

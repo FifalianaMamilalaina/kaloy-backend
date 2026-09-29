@@ -20,14 +20,7 @@ const layoutState = computed(() => layoutStore.currentLayout)
 
 // Dynamically choose layout component
 const currentLayout = computed(() => {
-  switch (layoutState.value) {
-    case 'sidebar':
-      return SidebarLayout
-    case 'topbar':
-      return TopbarLayout
-    default:
-      return SidebarLayout
-  }
+  return TopbarLayout
 })
 </script>
 

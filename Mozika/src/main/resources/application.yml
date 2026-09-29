@@ -17,6 +17,7 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+
   # Une photo de telephone depasse largement le plafond par defaut de Spring (1 Mo).
   servlet:
     multipart:
@@ -28,6 +29,13 @@ spring:
     port: 587
     username: antoniabijourasoarimalala@gmail.com
     password: kadd ohmz ltfx ahnw
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: iantsaniainahenintsoa@gmail.com
+    password: bmvw ozkt uzvk mqie
+
     properties:
       mail:
         smtp:
@@ -35,6 +43,7 @@ spring:
           starttls:
             enable: true
             required: true
+
 
 # MinioConfig exige ces proprietes pour demarrer. Aucun serveur MinIO ne tourne
 # ici : les valeurs permettent de construire le bean sans se connecter. Les
@@ -72,12 +81,20 @@ server:
 # Logs Configuration
 logging:
   level:
-    root: TRACE
-    org.hibernate.SQL: TRACE
+    root: INFO                      
+    org.mozika: DEBUG              
+    org.hibernate.SQL: DEBUG       
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 
 
 
+
+mapi:
+  base-url: https://messaging.mapi.mg/api
+  username: kaloy123
+  password: "hZ7Z8zrP:4.!9Rj"
+  sender-id: KALOY
 
 app:
   config:
@@ -86,3 +103,13 @@ app:
   jwt:
     secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
     expiration-ms: 86400000
+
+
+minio:
+  endpoint: http://192.168.2.37:9000
+  public-url: http://192.168.2.37:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: kaloy-media
+  presigned-url-expiry-days: 7
+
