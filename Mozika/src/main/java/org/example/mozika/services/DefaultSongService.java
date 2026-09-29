@@ -75,6 +75,17 @@ this.upNextQueueRepository = upNextQueueRepository;
 	}
 
 	@Override
+	public java.util.List<Song> getChansonsLesPlusEcoutees(Long idArtiste, int limite) {
+	    try {
+	        // Le comptage des ecoutes est fait en base : une seule requete,
+	        // quel que soit le nombre de chansons de l'artiste.
+	        return songRepository.trouverLesPlusEcoutees(idArtiste, limite);
+	    } catch (Exception ex) {
+	        throw new InternalServerErrorException("Error while retrieving most played songs", ex);
+	    }
+	}
+
+	@Override
 	public Song getSongById(Long id) {
 	    Optional<Song> song = songRepository.findById(id);
 	    if (song.isPresent()) {

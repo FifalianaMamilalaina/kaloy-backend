@@ -18,6 +18,9 @@ public interface SongService {
 
     Page<Song> getAllSong(Pageable pageable, SongSearch object);
 
+    /** Chansons d'un artiste, des plus ecoutees aux moins ecoutees. */
+    List<Song> getChansonsLesPlusEcoutees(Long idArtiste, int limite);
+
     Song getSongById(Long id);
 
     public String exportSongToCSV(List<Song> song);
