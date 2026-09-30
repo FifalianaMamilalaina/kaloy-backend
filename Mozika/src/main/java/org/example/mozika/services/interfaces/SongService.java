@@ -21,6 +21,9 @@ public interface SongService {
     /** Chansons d'un artiste, des plus ecoutees aux moins ecoutees. */
     List<Song> getChansonsLesPlusEcoutees(Long idArtiste, int limite);
 
+    /** Classement des chansons les plus ecoutees sur les N derniers jours. */
+    List<Song> getClassement(int jours, Long idGenre, int limite);
+
     Song getSongById(Long id);
 
     public String exportSongToCSV(List<Song> song);
