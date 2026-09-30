@@ -791,5 +791,45 @@ try {
 }
 }
 
+@Operation(
+  summary = "Weekly chart",
+  description = "Most played songs over the last N days. Optionally restricted to one genre. "
+    + "Only songs actually played during the period are returned."
+)
+@ApiResponses({
+  @ApiResponse(responseCode = "200", description = "Chart retrieved successfully"),
+  @ApiResponse(responseCode = "500", description = "Internal server error")
+})
+@GetMapping("/top")
+public ResponseEntity<?> getClassement(
+  @Parameter(description = "Length of the period, in days", required = false)
+  @RequestParam(defaultValue = "7") int jours,
+  @Parameter(description = "Restrict the chart to one genre", required = false)
+  @RequestParam(required = false) Long genreId,
+  @Parameter(description = "Maximum number of songs", required = false)
+  @RequestParam(defaultValue = "10") int limit
+) {
+try {
+  // Bornes : une periode ou une limite fournies par l'appelant ne doivent pas
+  // permettre de rapatrier tout l'historique en une requete.
+  int periode = Math.max(1, Math.min(jours, 365));
+  int limite = Math.max(1, Math.min(limit, 50));
+
+  RestResponse<java.util.List<Song>> response = RestResponse.buildSuccessResponse(
+    HttpStatus.OK,
+    "Chart retrieved successfully",
+    songService.getClassement(periode, genreId, limite)
+  );
+  return ResponseEntity.ok(response);
+} catch (Exception ex) {
+  RestResponse<String> errorResponse = RestResponse.buildErrorResponse(
+    HttpStatus.INTERNAL_SERVER_ERROR,
+    String.format("Error while retrieving chart: %s", ex.getMessage()),
+    null
+  );
+  return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+}
+}
+
 
 }

@@ -39,4 +39,32 @@ List<Song> findByAlbumidAlbums(Album albumidAlbums);
     """, nativeQuery = true)
 List<Song> trouverLesPlusEcoutees(@Param("idArtiste") Long idArtiste, @Param("limite") int limite);
 
+/**
+ * Classement des chansons les plus ecoutees sur une periode donnee.
+ *
+ * INNER JOIN, contrairement au classement par artiste : un classement ne
+ * contient que ce qui a reellement ete ecoute. Une chanson sans aucune ecoute
+ * sur la periode n'a rien a y faire, meme pour completer la liste.
+ *
+ * Le genre est facultatif. Le CAST est necessaire : sans lui, PostgreSQL ne
+ * sait pas typer un parametre nul et refuse la comparaison.
+ *
+ * En cas d'egalite, la chanson ecoutee le plus recemment passe devant : a
+ * nombre d'ecoutes egal, celle qui monte prime sur celle qui retombe.
+ */
+@Query(value = """
+    SELECT s.* FROM songs s
+    JOIN listening_history lh ON lh.song_id = s.id
+    WHERE lh.listened_at >= :depuis
+      AND (CAST(:idGenre AS bigint) IS NULL
+           OR EXISTS (SELECT 1 FROM song_genres sg
+                      WHERE sg.song_id = s.id AND sg.genre_id = :idGenre))
+    GROUP BY s.id
+    ORDER BY COUNT(lh.id) DESC, MAX(lh.listened_at) DESC, s.id DESC
+    LIMIT :limite
+    """, nativeQuery = true)
+List<Song> trouverClassement(@Param("depuis") java.time.LocalDateTime depuis,
+                             @Param("idGenre") Long idGenre,
+                             @Param("limite") int limite);
+
 }

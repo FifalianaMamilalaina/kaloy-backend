@@ -75,6 +75,19 @@ this.upNextQueueRepository = upNextQueueRepository;
 	}
 
 	@Override
+	public java.util.List<Song> getClassement(int jours, Long idGenre, int limite) {
+	    try {
+	        // Fenetre glissante : on compte les ecoutes des N derniers jours a
+	        // partir de maintenant, et non depuis le debut d'une semaine
+	        // calendaire — un classement vide le lundi matin n'aurait aucun sens.
+	        java.time.LocalDateTime depuis = java.time.LocalDateTime.now().minusDays(jours);
+	        return songRepository.trouverClassement(depuis, idGenre, limite);
+	    } catch (Exception ex) {
+	        throw new InternalServerErrorException("Error while retrieving chart", ex);
+	    }
+	}
+
+	@Override
 	public java.util.List<Song> getChansonsLesPlusEcoutees(Long idArtiste, int limite) {
 	    try {
 	        // Le comptage des ecoutes est fait en base : une seule requete,
