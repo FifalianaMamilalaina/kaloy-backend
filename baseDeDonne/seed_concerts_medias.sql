@@ -80,7 +80,18 @@ ON CONFLICT (id) DO NOTHING;
 -- post-evenement n'a pas de sens sur un evenement a venir.
 --
 -- L'uploader est le compte client de developpement, faute de mieux.
--- Les videos pointent vers YouTube, que SmartVideoPlayerComposable sait lire.
+--
+-- Les videos sont des fichiers heberges par la plateforme, comme le serait
+-- n'importe quelle video filmee pendant un evenement : elles sont lues via
+-- GET /uploads/{nom} et jouees par le lecteur natif. Le fichier de
+-- demonstration doit donc etre present dans Mozika/uploads/ ; sans lui, la
+-- galerie affichera un lecteur en erreur.
+--
+-- ATTENTION AU NOM D'HOTE : 10.0.2.2 est l'alias du PC vu depuis l'emulateur
+-- Android, et correspond a kaloy.uploads.url-publique dans application.yml.
+-- Pour tester en Wi-Fi ou sur un telephone physique, il faut le remplacer par
+-- l'adresse IP du PC :
+--   UPDATE event_media SET url = replace(url, '10.0.2.2', '<ip-du-pc>');
 
 INSERT INTO event_media (id, event_id, uploader_user_id, media_type_id, url, created_at)
 SELECT v.id, v.event_id,
@@ -93,15 +104,15 @@ FROM (VALUES
   (801, 401, 'PHOTO', 'https://picsum.photos/seed/ev401a/800/600', TIMESTAMP '2026-06-15 02:10'),
   (802, 401, 'PHOTO', 'https://picsum.photos/seed/ev401b/800/600', TIMESTAMP '2026-06-15 02:12'),
   (803, 401, 'PHOTO', 'https://picsum.photos/seed/ev401c/800/600', TIMESTAMP '2026-06-15 02:15'),
-  (804, 401, 'VIDEO', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', TIMESTAMP '2026-06-15 09:00'),
+  (804, 401, 'VIDEO', 'http://10.0.2.2:8087/mozika/uploads/demo-evenement.mp4', TIMESTAMP '2026-06-15 09:00'),
 
   -- Gasy Festival
   (805, 402, 'PHOTO', 'https://picsum.photos/seed/ev402a/800/600', TIMESTAMP '2026-08-21 22:00'),
   (806, 402, 'PHOTO', 'https://picsum.photos/seed/ev402b/800/600', TIMESTAMP '2026-08-22 21:30'),
   (807, 402, 'PHOTO', 'https://picsum.photos/seed/ev402c/800/600', TIMESTAMP '2026-08-23 22:00'),
   (808, 402, 'PHOTO', 'https://picsum.photos/seed/ev402d/800/600', TIMESTAMP '2026-08-24 10:00'),
-  (809, 402, 'VIDEO', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', TIMESTAMP '2026-08-24 11:00'),
-  (810, 402, 'VIDEO', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', TIMESTAMP '2026-08-24 11:30')
+  (809, 402, 'VIDEO', 'http://10.0.2.2:8087/mozika/uploads/demo-evenement.mp4', TIMESTAMP '2026-08-24 11:00'),
+  (810, 402, 'VIDEO', 'http://10.0.2.2:8087/mozika/uploads/demo-evenement.mp4', TIMESTAMP '2026-08-24 11:30')
 ) AS v(id, event_id, type, url, quand)
 WHERE EXISTS (SELECT 1 FROM users WHERE email = 'client@dev.com')
 ON CONFLICT (id) DO NOTHING;
