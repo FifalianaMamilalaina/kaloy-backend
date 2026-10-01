@@ -23,7 +23,7 @@ public class DefaultMediaService implements MediaService {
     private final SongRepository songRepository;
     private final StorageService storageService;
 
-    @Value("${app.media-base-url:http://172.16.0.26:8087/mozika}")
+    @Value("${app.media-base-url}")
     private String mediaBaseUrl;
 
     @Override
