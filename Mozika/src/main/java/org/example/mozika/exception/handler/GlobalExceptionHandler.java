@@ -55,6 +55,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    public void handleClientDisconnect(
+            org.springframework.web.context.request.async.AsyncRequestNotUsableException ex) {
+        log.warn("Client disconnected during streaming (ignored): {}", ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RestResponse<Void>> handleGenericException(Exception ex) {
         RestResponse<Void> response = RestResponse.buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,

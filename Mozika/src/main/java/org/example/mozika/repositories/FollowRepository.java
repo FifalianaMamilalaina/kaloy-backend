@@ -14,6 +14,7 @@ public interface FollowRepository extends JpaRepository<Follow, Long>, JpaSpecif
 
 List<Follow> findByClientuseridUsers(User clientuseridUsers);
 List<Follow> findByArtistidArtists(Artist artistidArtists);
+long countByClientuseridUsers(User clientuseridUsers);
 
 
 

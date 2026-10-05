@@ -29,6 +29,11 @@ public class ListeningHistory  {
 	@Column(name="listened_at", unique = false, nullable = false)
 	@NotNull(message = "ListenedAt cannot be null")
 	private java.time.LocalDateTime listenedAt;
-	
+
+	@Column(name="duration_listened_seconds")
+	private Integer durationListenedSeconds;
+
+	@Column(name="completed")
+	private Boolean completed;
 
 }

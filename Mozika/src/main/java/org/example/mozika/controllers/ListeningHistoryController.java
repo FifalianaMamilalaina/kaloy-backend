@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.example.mozika.models.ListeningHistory;
 import org.example.mozika.models.dto.ListeningHistorySearch;
+import org.example.mozika.models.dto.ListeningHistoryPeriod;
+import org.example.mozika.models.dto.ListeningHistoryItemResponse;
+import org.example.mozika.models.dto.CreateMyListeningHistoryRequest;
 import org.springframework.web.bind.annotation.*;
 import org.example.mozika.services.interfaces.ListeningHistoryService;
 import org.example.mozika.utils.WebUtils;
@@ -29,15 +32,113 @@ import java.util.HashMap;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.ResourceNotFoundException;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @RestController
 @RequestMapping("/listeninghistorys")
 @Tag(name = "Listening history", description = "Listening history Management APIs")
+@Validated
 public class ListeningHistoryController  {
 	private final ListeningHistoryService listeninghistoryService;
 
 	public ListeningHistoryController(ListeningHistoryService listeninghistoryService) {
 	   this.listeninghistoryService = listeninghistoryService;
+	}
+
+	@Operation(
+	    summary = "Retrieve my listening history",
+	    description = "Get the authenticated user's listening history filtered by period and song or artist."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me")
+	public ResponseEntity<RestResponse<Page<ListeningHistoryItemResponse>>> getMyListeningHistory(
+	    @AuthenticationPrincipal UserDetails userDetails,
+	    @RequestParam(defaultValue = "ALL") ListeningHistoryPeriod period,
+	    @RequestParam(required = false) String search,
+	    @RequestParam(defaultValue = "0") @Min(0) int page,
+	    @RequestParam(defaultValue = "50") @Min(1) @Max(100) int size
+	) {
+	    LocalDate today = LocalDate.now(ZoneId.of("Indian/Antananarivo"));
+	    LocalDateTime startAt = null;
+	    LocalDateTime endAt = null;
+	    switch (period) {
+	        case TODAY -> {
+	            startAt = today.atStartOfDay();
+	            endAt = LocalDateTime.now(ZoneId.of("Indian/Antananarivo"));
+	        }
+	        case YESTERDAY -> {
+	            startAt = today.minusDays(1).atStartOfDay();
+	            endAt = today.atStartOfDay();
+	        }
+	        case WEEK -> {
+	            startAt = today.minusDays(6).atStartOfDay();
+	            endAt = LocalDateTime.now(ZoneId.of("Indian/Antananarivo"));
+	        }
+	        case MONTH -> {
+	            startAt = today.withDayOfMonth(1).atStartOfDay();
+	            endAt = LocalDateTime.now(ZoneId.of("Indian/Antananarivo"));
+	        }
+	        case ALL -> {
+	            // No date bounds for the complete history.
+	        }
+	    }
+
+	    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "listenedAt"));
+	    Page<ListeningHistoryItemResponse> history = listeninghistoryService.getMyListeningHistory(
+	            userDetails.getUsername(),
+	            startAt,
+	            endAt,
+	            search == null || search.isBlank() ? null : search.trim(),
+	            pageable
+	    );
+	    RestResponse<Page<ListeningHistoryItemResponse>> response = RestResponse.buildSuccessResponse(
+	            HttpStatus.OK,
+	            "Historique d'écoute récupéré avec succès.",
+	            history
+	    );
+	    return ResponseEntity.ok(response);
+	}
+
+	@Operation(summary = "Supprimer une entrée de l'historique", description = "Supprime une entrée de l'historique d'écoute de l'utilisateur authentifié.")
+	@SecurityRequirement(name = "bearerAuth")
+	@DeleteMapping("/me/{id}")
+	public ResponseEntity<RestResponse<Void>> deleteMyListeningHistory(
+	    @AuthenticationPrincipal UserDetails userDetails,
+	    @PathVariable Long id
+	) {
+	    listeninghistoryService.deleteMyListeningHistory(userDetails.getUsername(), id);
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(HttpStatus.OK, "Entrée supprimée.", null));
+	}
+
+	@Operation(
+	    summary = "Enregistrer une écoute",
+	    description = "Crée un entrée dans l'historique d'écoute pour l'utilisateur authentifié."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me")
+	public ResponseEntity<?> createMyListeningHistory(
+	    @AuthenticationPrincipal UserDetails userDetails,
+	    @RequestBody @Valid CreateMyListeningHistoryRequest request,
+	    BindingResult bindingResult
+	) {
+	    if (bindingResult.hasErrors()) {
+	        HashMap<String, String> errors = new HashMap<>();
+	        bindingResult.getFieldErrors().forEach(error ->
+	            errors.put(error.getField(), error.getDefaultMessage()));
+	        return ResponseEntity.badRequest().body(
+	            RestResponse.buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation échouée.", errors));
+	    }
+	    ListeningHistory created = listeninghistoryService.createMyListeningHistory(
+	            userDetails.getUsername(), request);
+	    return ResponseEntity.status(HttpStatus.CREATED).body(
+	        RestResponse.buildSuccessResponse(HttpStatus.CREATED, "Historique enregistré.", created));
 	}
 
 	@Operation(
