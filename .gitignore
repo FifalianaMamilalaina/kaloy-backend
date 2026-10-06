@@ -19,3 +19,4 @@ MozikaWebapp/.env.local
 .idea/
 *.iml
 .vscode/
+Mozika/uploads/demo-evenement.mp4
