@@ -4,11 +4,8 @@ import org.example.mozika.exception.ResourceNotFoundException;
 import org.example.mozika.models.Artist;
 import org.example.mozika.models.Concert;
 import org.example.mozika.models.ParticipationStatuse;
-import org.example.mozika.models.User;
-import org.example.mozika.repositories.ArtistRepository;
 import org.example.mozika.repositories.ConcertRepository;
 import org.example.mozika.repositories.ParticipationStatuseRepository;
-import org.example.mozika.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -39,18 +36,15 @@ public class ServiceInvitations {
     public static final String STATUT_REFUSE = "DECLINED";
 
     private final ConcertRepository concertRepository;
-    private final ArtistRepository artistRepository;
-    private final UserRepository userRepository;
     private final ParticipationStatuseRepository statutRepository;
+    private final ServiceArtisteConnecte serviceArtisteConnecte;
 
     public ServiceInvitations(ConcertRepository concertRepository,
-                              ArtistRepository artistRepository,
-                              UserRepository userRepository,
-                              ParticipationStatuseRepository statutRepository) {
+                              ParticipationStatuseRepository statutRepository,
+                              ServiceArtisteConnecte serviceArtisteConnecte) {
         this.concertRepository = concertRepository;
-        this.artistRepository = artistRepository;
-        this.userRepository = userRepository;
         this.statutRepository = statutRepository;
+        this.serviceArtisteConnecte = serviceArtisteConnecte;
     }
 
     /**
@@ -122,23 +116,7 @@ public class ServiceInvitations {
         return concertRepository.save(concert);
     }
 
-    /**
-     * Artiste rattache au compte connecte.
-     *
-     * Un compte de role ARTIST sans ligne dans artists existe en base (le compte
-     * de developpement artist@dev.com) : on renvoie alors 403 plutot que de
-     * laisser remonter une erreur technique.
-     */
     private Artist artisteConnecte(String email) {
-        User utilisateur = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Compte introuvable"));
-
-        List<Artist> artistes = artistRepository.findByUseridUsers(utilisateur);
-        if (artistes.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Ce compte n'est rattache a aucun profil artiste");
-        }
-        return artistes.get(0);
+        return serviceArtisteConnecte.resoudre(email);
     }
 }
