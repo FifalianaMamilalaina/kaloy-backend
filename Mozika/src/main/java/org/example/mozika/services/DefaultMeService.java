@@ -3,12 +3,18 @@ package org.example.mozika.services;
 import org.example.mozika.auth.EmailService;
 import org.example.mozika.auth.SmsService;
 import org.example.mozika.dto.me.*;
+import org.example.mozika.exception.InternalServerErrorException;
 import org.example.mozika.exception.ResourceNotFoundException;
 import org.example.mozika.models.*;
 import org.example.mozika.repositories.*;
 import org.example.mozika.services.interfaces.ArtistService;
 import org.example.mozika.services.interfaces.MeService;
+import org.example.mozika.services.interfaces.StorageService;
 import org.example.mozika.services.interfaces.UserService;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +48,7 @@ public class DefaultMeService implements MeService {
     private final SmsService smsService;
     private final UserService userService;
     private final ArtistService artistService;
+    private final StorageService storageService;
 
     public DefaultMeService(UserRepository userRepository,
             ArtistRepository artistRepository,
@@ -58,7 +65,8 @@ public class DefaultMeService implements MeService {
             EmailService emailService,
             SmsService smsService,
             UserService userService,
-            ArtistService artistService) {
+            ArtistService artistService,
+            StorageService storageService) {
         this.userRepository = userRepository;
         this.artistRepository = artistRepository;
         this.usersInfosRepository = usersInfosRepository;
@@ -75,6 +83,7 @@ public class DefaultMeService implements MeService {
         this.smsService = smsService;
         this.userService = userService;
         this.artistService = artistService;
+        this.storageService = storageService;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -129,6 +138,14 @@ public class DefaultMeService implements MeService {
             case "SUSPENDED" -> "Suspendu";
             default -> name;
         };
+    }
+
+    private String resolvePhotoUrl(String photoUrl) {
+        if (photoUrl == null) return null;
+        if (photoUrl.startsWith("profile-photos/")) {
+            try { return storageService.getPresignedUrl(photoUrl); } catch (Exception e) { return null; }
+        }
+        return photoUrl;
     }
 
     private String resolveVerifStatus(VerificationStatuse vs) {
@@ -190,7 +207,7 @@ public class DefaultMeService implements MeService {
                 info != null ? info.getName() : null,
                 info != null ? info.getLastName() : null,
                 info != null ? info.getUserName() : null,
-                info != null ? info.getPhotoUrl() : null);
+                info != null ? resolvePhotoUrl(info.getPhotoUrl()) : null);
     }
 
     private ArtistProfileResponse buildArtistProfile(User user) {
@@ -206,7 +223,7 @@ public class DefaultMeService implements MeService {
         resp.setArtistType(artist.getArtisttypeidArtistTypes().getName());
         resp.setStageName(artist.getStageName());
         resp.setActiveSinceYear(artist.getActiveSinceYear());
-        resp.setPhotoUrl(artist.getPhotoUrl());
+        resp.setPhotoUrl(resolvePhotoUrl(artist.getPhotoUrl()));
         resp.setBio(artist.getBio());
         resp.setVerificationStatus(resolveVerifStatus(artist.getVerificationstatusidVerificationStatuses()));
         resp.setIsCertified(artist.getIsCertified());
@@ -305,6 +322,52 @@ public class DefaultMeService implements MeService {
 
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+    }
+
+    // ── POST /me/photo/upload ─────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public String uploadPhoto(String email, MultipartFile file) {
+        User user = loadUser(email);
+        String role = user.getRoleidUserRoles() != null ? user.getRoleidUserRoles().getName() : "";
+
+        String ext = "jpg";
+        String original = file.getOriginalFilename();
+        if (original != null && original.contains(".")) {
+            ext = original.substring(original.lastIndexOf('.') + 1).toLowerCase();
+        }
+        String objectName = "profile-photos/" + user.getId() + "/" + UUID.randomUUID() + "." + ext;
+
+        try {
+            storageService.uploadObject(objectName, file.getInputStream(), file.getSize(),
+                    file.getContentType());
+        } catch (IOException e) {
+            throw new InternalServerErrorException("Erreur lors de la lecture du fichier photo.", e);
+        }
+
+        if ("CLIENT".equalsIgnoreCase(role)) {
+            List<UsersInfos> infoList = usersInfosRepository.findByUser(user);
+            UsersInfos info;
+            if (infoList.isEmpty()) {
+                info = new UsersInfos();
+                info.setUser(user);
+            } else {
+                info = infoList.get(0);
+            }
+            info.setPhotoUrl(objectName);
+            usersInfosRepository.save(info);
+        } else if ("ARTIST".equalsIgnoreCase(role)) {
+            Artist artist = loadArtist(user);
+            artist.setPhotoUrl(objectName);
+            artistRepository.save(artist);
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Type de compte non reconnu.");
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        return "Photo mise à jour avec succès.";
     }
 
     // ── POST /me/email ────────────────────────────────────────────────────────

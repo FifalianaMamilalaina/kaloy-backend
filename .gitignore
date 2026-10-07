@@ -5,3 +5,4 @@ Mozika/target/classes/application.yml
 Mozika/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
 src/main/resources/application.yml
 Mozika/target/
+*.class

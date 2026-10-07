@@ -8,7 +8,9 @@ import org.example.mozika.dto.RestResponse;
 import org.example.mozika.dto.me.*;
 import org.example.mozika.services.interfaces.MeService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -82,6 +84,18 @@ public class MeController {
                 return ResponseEntity.ok(
                                 RestResponse.buildSuccessResponse(HttpStatus.OK, "Photo mise à jour avec succès.",
                                                 null));
+        }
+
+        // ── POST /me/photo/upload ─────────────────────────────────────────────────
+
+        @Operation(summary = "Téléverser une photo de profil (multipart) vers MinIO")
+        @PostMapping(value = "/photo/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<RestResponse<Void>> uploadPhoto(
+                        @AuthenticationPrincipal UserDetails userDetails,
+                        @RequestParam("file") MultipartFile file) {
+                meService.uploadPhoto(userDetails.getUsername(), file);
+                return ResponseEntity.ok(
+                                RestResponse.buildSuccessResponse(HttpStatus.OK, "Photo mise à jour avec succès.", null));
         }
 
         // ── POST /me/email ────────────────────────────────────────────────────────

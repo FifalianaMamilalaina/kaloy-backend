@@ -3,10 +3,13 @@ package org.example.mozika.services;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 import io.minio.StatObjectArgs;
 import io.minio.GetObjectResponse;
 import io.minio.StatObjectResponse;
 import io.minio.http.Method;
+
+import java.io.InputStream;
 import lombok.RequiredArgsConstructor;
 import org.example.mozika.exception.InternalServerErrorException;
 import org.example.mozika.services.interfaces.StorageService;
@@ -90,6 +93,23 @@ public class MinioStorageService implements StorageService {
                     .build());
         } catch (Exception e) {
             throw new InternalServerErrorException("Média introuvable : " + objectName, e);
+        }
+    }
+
+    @Override
+    public void uploadObject(String objectName, InputStream inputStream, long size, String contentType) {
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucket)
+                            .object(objectName)
+                            .stream(inputStream, size, -1)
+                            .contentType(contentType != null ? contentType : "application/octet-stream")
+                            .build());
+            log.debug("Objet uploadé dans MinIO: {}", objectName);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'upload de l'objet MinIO: {}", objectName, e);
+            throw new InternalServerErrorException("Erreur lors de l'upload : " + objectName, e);
         }
     }
 }
