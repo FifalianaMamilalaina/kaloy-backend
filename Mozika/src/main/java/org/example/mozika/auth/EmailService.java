@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@Service
+@Service("teammateEmailService")
 public class EmailService {
 
     private final JavaMailSender mailSender;

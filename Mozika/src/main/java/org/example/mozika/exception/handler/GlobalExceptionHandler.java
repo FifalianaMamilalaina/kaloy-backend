@@ -6,8 +6,12 @@ import org.example.mozika.exception.InternalServerErrorException;
 import org.example.mozika.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,6 +32,34 @@ public class GlobalExceptionHandler {
                 null);
         log.error("An internal error occurred : {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    /**
+     * Echec de validation d'un corps annote @Valid.
+     *
+     * Les controleurs generes recoivent un BindingResult et traitent le cas
+     * eux-memes. Ceux ecrits a la main ne le font pas : sans ce gestionnaire,
+     * Spring leve MethodArgumentNotValidException, que le filet de securite
+     * attrape et transforme en 500 « Une erreur inattendue s'est produite ».
+     * Un nom d'evenement vide devenait ainsi une erreur serveur, alors que
+     * c'est une saisie incorrecte dont l'application doit pouvoir informer
+     * l'utilisateur champ par champ.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<RestResponse<Map<String, String>>> handleValidationException(
+            MethodArgumentNotValidException ex) {
+        Map<String, String> erreurs = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(
+                erreur -> erreurs.put(erreur.getField(), erreur.getDefaultMessage()));
+
+        String message = erreurs.isEmpty()
+                ? "Les donnees envoyees sont invalides."
+                : String.join(" ; ", erreurs.values());
+
+        RestResponse<Map<String, String>> response =
+                RestResponse.buildErrorResponse(HttpStatus.BAD_REQUEST, message, erreurs);
+        log.info("Validation failed : {}", erreurs);
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -69,6 +101,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<RestResponse<Void>> handleIllegalStateException(IllegalStateException ex) {
+        RestResponse<Void> response = RestResponse.buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null);
+        log.info("Illegal state: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     private String resolveDuplicateFieldMessage(DataIntegrityViolationException ex) {
         String rootMessage = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage()
                 : ex.getMessage();
@@ -85,5 +124,4 @@ public class GlobalExceptionHandler {
         }
         return "Un compte existe déjà avec ces informations. Veuillez vous connecter ou en utiliser d'autres.";
     }
-
 }

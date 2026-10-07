@@ -1,11 +1,22 @@
-# Configuration locale
-local.properties
-
-# Configuration application
-Mozika/src/main/resources/application.yml
-
-# Fichiers générés Maven
+# --- Backend Spring Boot (Mozika) ---
 Mozika/target/
-
-# Fichiers compilés Java
+Mozika/src/main/resources/application.yml
+Mozika/src/main/resources/application-*.yml
 *.class
+*.log
+
+# --- Frontend Vue.js (MozikaWebapp) ---
+MozikaWebapp/node_modules/
+MozikaWebapp/dist/
+MozikaWebapp/.env
+MozikaWebapp/.env.local
+
+# --- Secrets génériques ---
+.env
+*.env
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/
+Mozika/uploads/
