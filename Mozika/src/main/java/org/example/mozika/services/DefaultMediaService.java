@@ -32,11 +32,11 @@ public class DefaultMediaService implements MediaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Song introuvable avec l'id : " + songId));
 
         MediaStreamUrlsDto dto = new MediaStreamUrlsDto();
-        dto.setAudioStreamUrl(streamUrl(songId, "audio"));
+        dto.setAudioStreamUrl(resoudreMedia(song.getAudioUrl(), songId, "audio"));
         dto.setVideoStreamUrl(resolveVideoUrl(song.getVideoUrl()));
-        dto.setKaraokeStreamUrl(streamUrl(songId, "karaoke"));
-        dto.setPlaybackStreamUrl(streamUrl(songId, "playback"));
-        dto.setSolfaUrl(storageService.getPresignedUrl(song.getSolfaUrl()));
+        dto.setKaraokeStreamUrl(resoudreMedia(song.getKaraokeAudioUrl(), songId, "karaoke"));
+        dto.setPlaybackStreamUrl(resoudreMedia(song.getPlaybackUrl(), songId, "playback"));
+        dto.setSolfaUrl(resoudreMedia(song.getSolfaUrl(), songId, null));
         return dto;
     }
 
@@ -76,11 +76,11 @@ public class DefaultMediaService implements MediaService {
         }
 
         // Le mobile lit via le backend, sans accès direct au port MinIO.
-        dto.setAudioStreamUrl(streamUrl(songId, "audio"));
+        dto.setAudioStreamUrl(resoudreMedia(song.getAudioUrl(), songId, "audio"));
         dto.setVideoStreamUrl(resolveVideoUrl(song.getVideoUrl()));
-        dto.setKaraokeStreamUrl(streamUrl(songId, "karaoke"));
-        dto.setPlaybackStreamUrl(streamUrl(songId, "playback"));
-        dto.setSolfaUrl(storageService.getPresignedUrl(song.getSolfaUrl()));
+        dto.setKaraokeStreamUrl(resoudreMedia(song.getKaraokeAudioUrl(), songId, "karaoke"));
+        dto.setPlaybackStreamUrl(resoudreMedia(song.getPlaybackUrl(), songId, "playback"));
+        dto.setSolfaUrl(resoudreMedia(song.getSolfaUrl(), songId, null));
 
         return dto;
     }
@@ -93,6 +93,47 @@ public class DefaultMediaService implements MediaService {
             return videoId != null ? YouTubeUtils.getEmbedUrl(videoId) : null;
         }
         return storageService.getPresignedUrl(rawVideoUrl);
+    }
+
+    /**
+     * Adresse de lecture d'un media, selon la facon dont il est stocke.
+     *
+     * Deux stockages coexistent dans l'application :
+     *
+     *   * un nom d'objet MinIO (« songs/301/audio.mp3 ») — le mobile le lit
+     *     alors par /media/songs/{id}/stream/{type}, qui relaie le flux sans
+     *     exposer le port MinIO ;
+     *   * une URL absolue, servie par le backend lui-meme depuis son dossier
+     *     uploads. C'est deja le cas des photos d'evenement et de tout ce que
+     *     depose le pipeline d'ingestion, qui poste sur /uploads.
+     *
+     * Reconnaitre les deux evite de dependre de MinIO pour travailler, sans
+     * renoncer a MinIO : le jour ou il tourne, les noms d'objets continuent d'y
+     * passer. C'est le meme principe que resolveVideoUrl, qui traite deja les
+     * liens YouTube a part plutot que de supposer un seul stockage.
+     *
+     * @param mediaType null pour un media sans route de streaming (la partition)
+     */
+    private String resoudreMedia(String valeurStockee, Long songId, String mediaType) {
+        if (valeurStockee == null || valeurStockee.isBlank()) {
+            return null;
+        }
+        if (estUrlAbsolue(valeurStockee) || valeurStockee.startsWith("/")) {
+            // Une adresse absolue (un lien YouTube, une ancienne ligne) ou un
+            // chemin (« /uploads/chanson.m4a ») sont renvoyes tels quels :
+            // c'est l'application qui prefixe le chemin avec sa propre adresse
+            // de base. Le nom d'hote cesse ainsi d'etre une donnee persistee.
+            return valeurStockee;
+        }
+        if (mediaType == null) {
+            return storageService.getPresignedUrl(valeurStockee);
+        }
+        return streamUrl(songId, mediaType);
+    }
+
+    private boolean estUrlAbsolue(String valeur) {
+        String v = valeur.toLowerCase();
+        return v.startsWith("http://") || v.startsWith("https://");
     }
 
     private String streamUrl(Long songId, String mediaType) {
