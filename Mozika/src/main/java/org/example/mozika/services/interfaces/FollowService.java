@@ -23,6 +23,8 @@ public interface FollowService {
     Follow updateFollow(Long id, Follow follow);
 
     void deleteFollow(Long id);
-    
+
+    long countMyFollows(String email);
+
 
 }

@@ -1,6 +1,7 @@
 package org.example.mozika.services.interfaces;
 
 import org.example.mozika.dto.me.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -37,4 +38,6 @@ public interface MeService {
     List<InstrumentRoleResponse> getInstrumentRoles();
 
     void deleteMyAccount(String email);
+
+    String uploadPhoto(String email, MultipartFile file);
 }

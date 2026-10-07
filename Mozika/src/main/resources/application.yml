@@ -1,6 +1,8 @@
 spring:
   application:
     name: mozika
+  config:
+    import: "optional:file:./local.properties"
 
   datasource:
     url: jdbc:postgresql://localhost:5432/musical_app
@@ -87,6 +89,7 @@ logging:
 
 
 app:
+  media-base-url: http://${adresse_ip}:8087/mozika
   config:
     column-visibility:
       file: ${user.dir}/config/column-visibility.json
@@ -94,5 +97,10 @@ app:
     secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
     expiration-ms: 86400000
 
-
-
+minio:
+  endpoint: http://${adresse_ip}:9000
+  public-url: http://${adresse_ip}:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: kaloy-media
+  presigned-url-expiry-days: 7

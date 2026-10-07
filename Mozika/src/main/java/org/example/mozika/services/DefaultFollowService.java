@@ -1,12 +1,14 @@
 package org.example.mozika.services;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;      
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.example.mozika.models.Follow;
 import org.example.mozika.models.dto.FollowSearch;
 import org.springframework.stereotype.Service;
 import org.example.mozika.repositories.FollowRepository;
+import org.example.mozika.repositories.UserRepository;
+import org.example.mozika.models.User;
 import java.util.Optional;
 import org.example.mozika.services.interfaces.FollowService;
 import org.example.mozika.specification.FollowSpecification;
@@ -20,9 +22,11 @@ import java.util.List;
 @Service
 public class DefaultFollowService implements FollowService {
 	private final FollowRepository followRepository;
+	private final UserRepository userRepository;
 
-	public DefaultFollowService(FollowRepository followRepository) {
+	public DefaultFollowService(FollowRepository followRepository, UserRepository userRepository) {
 	   this.followRepository = followRepository;
+	   this.userRepository = userRepository;
 	}
 
 	@Override
@@ -94,6 +98,13 @@ public class DefaultFollowService implements FollowService {
 	    } catch (Exception ex) {
 	        throw new InternalServerErrorException("Error while deleting follow", ex);
 	    }
+	}
+
+	@Override
+	public long countMyFollows(String email) {
+	    User user = userRepository.findByEmail(email)
+	            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+	    return followRepository.countByClientuseridUsers(user);
 	}
 
 

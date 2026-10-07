@@ -29,6 +29,8 @@ import java.util.HashMap;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.ResourceNotFoundException;
 import java.util.List;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/follows")
@@ -38,6 +40,16 @@ public class FollowController  {
 
 	public FollowController(FollowService followService) {
 	   this.followService = followService;
+	}
+
+	@Operation(summary = "Nombre d'artistes suivis", description = "Retourne le nombre d'artistes suivis par l'utilisateur authentifié.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me/count")
+	public ResponseEntity<RestResponse<Long>> getMyFollowsCount(
+	    @AuthenticationPrincipal UserDetails userDetails
+	) {
+	    long count = followService.countMyFollows(userDetails.getUsername());
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(HttpStatus.OK, "Nombre de follows.", count));
 	}
 
 	@Operation(
