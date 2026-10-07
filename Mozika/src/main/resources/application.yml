@@ -29,13 +29,6 @@ spring:
     port: 587
     username: antoniabijourasoarimalala@gmail.com
     password: kadd ohmz ltfx ahnw
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: iantsaniainahenintsoa@gmail.com
-    password: bmvw ozkt uzvk mqie
-
     properties:
       mail:
         smtp:
@@ -43,7 +36,6 @@ spring:
           starttls:
             enable: true
             required: true
-
 
 # MinioConfig exige ces proprietes pour demarrer. Aucun serveur MinIO ne tourne
 # ici : les valeurs permettent de construire le bean sans se connecter. Les
@@ -69,7 +61,10 @@ kaloy:
     # Dossier ou sont ecrits les fichiers envoyes, et adresse publique servant
     # a les relire. 10.0.2.2 est l'alias de l'hote vu depuis l'emulateur Android.
     dossier: ${user.dir}/uploads
-    url-publique: http://10.0.2.2:8087/mozika/uploads
+    # Chemin et non adresse absolue : le nom d'hote dependrait du reseau, et
+    # serait fige en base au moment de l'envoi. L'application le prefixe avec
+    # sa propre adresse de base.
+    url-publique: /uploads
 
 
 
@@ -90,11 +85,6 @@ logging:
 
 
 
-mapi:
-  base-url: https://messaging.mapi.mg/api
-  username: kaloy123
-  password: "hZ7Z8zrP:4.!9Rj"
-  sender-id: KALOY
 
 app:
   config:
@@ -105,11 +95,4 @@ app:
     expiration-ms: 86400000
 
 
-minio:
-  endpoint: http://192.168.2.37:9000
-  public-url: http://192.168.2.37:9000
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket: kaloy-media
-  presigned-url-expiry-days: 7
 
