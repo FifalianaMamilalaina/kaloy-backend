@@ -39,21 +39,28 @@ import java.util.HashMap;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.ResourceNotFoundException;
 import java.util.List;
+import org.example.mozika.services.interfaces.PlaylistMobileService;
+import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
+import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/playlists")
 @Tag(name = "Playlist", description = "Playlist Management APIs")
 public class PlaylistController  {
 	private final PlaylistService playlistService;
-private final DownloadService downloadService;
-private final PlaylistSongService playlistsongService;
+	private final DownloadService downloadService;
+	private final PlaylistSongService playlistsongService;
+	private final PlaylistMobileService playlistMobileService;
 
-
-	public PlaylistController(PlaylistService playlistService, DownloadService downloadService, PlaylistSongService playlistsongService) {
-	   this.playlistService = playlistService;
-	this.downloadService = downloadService;
-	this.playlistsongService = playlistsongService;
-	
+	public PlaylistController(PlaylistService playlistService, DownloadService downloadService,
+			PlaylistSongService playlistsongService, PlaylistMobileService playlistMobileService) {
+		this.playlistService = playlistService;
+		this.downloadService = downloadService;
+		this.playlistsongService = playlistsongService;
+		this.playlistMobileService = playlistMobileService;
 	}
 
 	@Operation(
@@ -563,5 +570,49 @@ try {
 }
 }
 
+	// ─── Mobile endpoints ────────────────────────────────────────────────────
+
+	@Operation(summary = "Get my playlists", description = "Returns all playlists owned by the authenticated user.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me")
+	public ResponseEntity<RestResponse<List<PlaylistUiItemResponse>>> getMesPlaylists(
+			@AuthenticationPrincipal UserDetails userDetails) {
+		List<PlaylistUiItemResponse> playlists = playlistMobileService.getMesPlaylists(userDetails.getUsername());
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlists retrieved successfully", playlists));
+	}
+
+	@Operation(summary = "Create a playlist (mobile)", description = "Creates a new private playlist for the authenticated user.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me")
+	public ResponseEntity<RestResponse<Playlist>> createPlaylistMobile(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid CreatePlaylistMobileRequest request) {
+		Playlist created = playlistMobileService.createPlaylist(userDetails.getUsername(), request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Playlist created successfully", created));
+	}
+
+	@Operation(summary = "Merge playlists", description = "Merges 2 or more owned playlists into a new one.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/merge")
+	public ResponseEntity<RestResponse<Playlist>> mergePlaylists(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid MergePlaylistsMobileRequest request) {
+		Playlist merged = playlistMobileService.mergePlaylist(userDetails.getUsername(), request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Playlists merged successfully", merged));
+	}
+
+	@Operation(summary = "Download playlist for offline", description = "Marks a playlist as downloaded (max 10 active, 30-day expiry).")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/{id}/download")
+	public ResponseEntity<RestResponse<Void>> downloadPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		playlistMobileService.downloadPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist marked for offline use", null));
+	}
 
 }

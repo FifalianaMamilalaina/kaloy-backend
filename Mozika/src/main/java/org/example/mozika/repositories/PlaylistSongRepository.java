@@ -13,6 +13,7 @@ import org.example.mozika.models.Song;
 public interface PlaylistSongRepository extends JpaRepository<PlaylistSong, Long>, JpaSpecificationExecutor<PlaylistSong> {
 
 List<PlaylistSong> findByPlaylistidPlaylists(Playlist playlistidPlaylists);
+List<PlaylistSong> findByPlaylistidPlaylistsOrderByPositionAsc(Playlist playlistidPlaylists);
 List<PlaylistSong> findBySongidSongs(Song songidSongs);
 
 

@@ -1,0 +1,214 @@
+package org.example.mozika.services;
+
+import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
+import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.exception.ResourceNotFoundException;
+import org.example.mozika.models.*;
+import org.example.mozika.repositories.*;
+import org.example.mozika.services.interfaces.PlaylistMobileService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
+
+@Service
+public class DefaultPlaylistMobileService implements PlaylistMobileService {
+
+	private final PlaylistRepository playlistRepository;
+	private final PlaylistSongRepository playlistSongRepository;
+	private final PlaylistDownloadRepository playlistDownloadRepository;
+	private final PlaylistFusionRepository playlistFusionRepository;
+	private final PlaylistVisibilitieRepository playlistVisibilitieRepository;
+	private final EditorialPlaylistRepository editorialPlaylistRepository;
+	private final UserRepository userRepository;
+
+	public DefaultPlaylistMobileService(
+			PlaylistRepository playlistRepository,
+			PlaylistSongRepository playlistSongRepository,
+			PlaylistDownloadRepository playlistDownloadRepository,
+			PlaylistFusionRepository playlistFusionRepository,
+			PlaylistVisibilitieRepository playlistVisibilitieRepository,
+			EditorialPlaylistRepository editorialPlaylistRepository,
+			UserRepository userRepository) {
+		this.playlistRepository = playlistRepository;
+		this.playlistSongRepository = playlistSongRepository;
+		this.playlistDownloadRepository = playlistDownloadRepository;
+		this.playlistFusionRepository = playlistFusionRepository;
+		this.playlistVisibilitieRepository = playlistVisibilitieRepository;
+		this.editorialPlaylistRepository = editorialPlaylistRepository;
+		this.userRepository = userRepository;
+	}
+
+	@Override
+	public List<PlaylistUiItemResponse> getMesPlaylists(String email) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+
+		List<Playlist> playlists = playlistRepository.findByOwneruseridUsers(user);
+		List<PlaylistUiItemResponse> result = new ArrayList<>();
+
+		for (Playlist playlist : playlists) {
+			List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylists(playlist);
+			int nombreTitres = songs.size();
+			int dureeSecondes = songs.stream()
+					.mapToInt(ps -> ps.getSongidSongs().getDurationSeconds() != null
+							? ps.getSongidSongs().getDurationSeconds() : 0)
+					.sum();
+			boolean estTelecharge = playlistDownloadRepository
+					.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
+					.map(PlaylistDownload::getIsActive)
+					.orElse(false);
+
+			result.add(new PlaylistUiItemResponse(
+					playlist.getId(),
+					playlist.getName(),
+					null,
+					nombreTitres,
+					dureeSecondes,
+					estTelecharge,
+					playlist.getShareToken(),
+					playlist.getUpdatedAt() != null ? playlist.getUpdatedAt().toString() : null
+			));
+		}
+		return result;
+	}
+
+	@Override
+	public List<EditorialPlaylist> getFeaturedEditorials() {
+		return editorialPlaylistRepository.findByIsFeaturedTrue();
+	}
+
+	@Override
+	@Transactional
+	public Playlist createPlaylist(String email, CreatePlaylistMobileRequest request) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+
+		PlaylistVisibilitie visibility = playlistVisibilitieRepository.findByName("PRIVATE")
+				.orElseGet(() -> playlistVisibilitieRepository.findAll().stream()
+						.findFirst()
+						.orElseThrow(() -> new ResourceNotFoundException("No playlist visibility found")));
+
+		Playlist playlist = new Playlist();
+		playlist.setName(request.getName());
+		playlist.setOwneruseridUsers(user);
+		playlist.setVisibilityidPlaylistVisibilities(visibility);
+		playlist.setCreatedAt(LocalDateTime.now());
+		playlist.setUpdatedAt(LocalDateTime.now());
+
+		return playlistRepository.save(playlist);
+	}
+
+	@Override
+	@Transactional
+	public void deletePlaylist(String email, Long playlistId) {
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+
+		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+
+		List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylists(playlist);
+		playlistSongRepository.deleteAll(songs);
+
+		User user = playlist.getOwneruseridUsers();
+		playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
+				.ifPresent(playlistDownloadRepository::delete);
+
+		playlistRepository.delete(playlist);
+	}
+
+	@Override
+	@Transactional
+	public Playlist mergePlaylist(String email, MergePlaylistsMobileRequest request) {
+		if (request.getSourceIds().size() < 2) {
+			throw new IllegalArgumentException("Au moins 2 playlists sont nécessaires pour fusionner");
+		}
+
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+
+		List<Playlist> sources = new ArrayList<>();
+		for (Long sourceId : request.getSourceIds()) {
+			Playlist source = playlistRepository.findById(sourceId)
+					.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + sourceId));
+			if (!source.getOwneruseridUsers().getEmail().equals(email)) {
+				throw new ResourceNotFoundException("Playlist not found: " + sourceId);
+			}
+			sources.add(source);
+		}
+
+		PlaylistVisibilitie visibility = playlistVisibilitieRepository.findByName("PRIVATE")
+				.orElseGet(() -> playlistVisibilitieRepository.findAll().stream()
+						.findFirst()
+						.orElseThrow(() -> new ResourceNotFoundException("No playlist visibility found")));
+
+		Playlist result = new Playlist();
+		result.setName(request.getResultName());
+		result.setOwneruseridUsers(user);
+		result.setVisibilityidPlaylistVisibilities(visibility);
+		result.setCreatedAt(LocalDateTime.now());
+		result.setUpdatedAt(LocalDateTime.now());
+		result = playlistRepository.save(result);
+
+		// Collect unique songs maintaining insertion order
+		Map<Long, Song> uniqueSongs = new LinkedHashMap<>();
+		for (Playlist source : sources) {
+			List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(source);
+			for (PlaylistSong ps : songs) {
+				uniqueSongs.putIfAbsent(ps.getSongidSongs().getId(), ps.getSongidSongs());
+			}
+		}
+
+		int position = 1;
+		final Playlist savedResult = result;
+		for (Song song : uniqueSongs.values()) {
+			PlaylistSong newPs = new PlaylistSong();
+			newPs.setPlaylistidPlaylists(savedResult);
+			newPs.setSongidSongs(song);
+			newPs.setPosition(position++);
+			newPs.setAddedAt(LocalDateTime.now());
+			playlistSongRepository.save(newPs);
+		}
+
+		for (Playlist source : sources) {
+			PlaylistFusion fusion = new PlaylistFusion();
+			fusion.setResultPlaylist(savedResult);
+			fusion.setSourcePlaylist(source);
+			fusion.setFusedAt(LocalDateTime.now());
+			playlistFusionRepository.save(fusion);
+		}
+
+		return savedResult;
+	}
+
+	@Override
+	@Transactional
+	public void downloadPlaylist(String email, Long playlistId) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+
+		long count = playlistDownloadRepository.countByUseridUsersAndIsActiveTrue(user);
+		if (count >= 10) {
+			throw new IllegalStateException("Limite de 10 téléchargements atteinte");
+		}
+
+		PlaylistDownload download = playlistDownloadRepository
+				.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
+				.orElse(new PlaylistDownload());
+
+		download.setUseridUsers(user);
+		download.setPlaylistidPlaylists(playlist);
+		download.setDownloadedAt(LocalDateTime.now());
+		download.setExpiresAt(LocalDateTime.now().plusDays(30));
+		download.setIsActive(true);
+
+		playlistDownloadRepository.save(download);
+	}
+}
