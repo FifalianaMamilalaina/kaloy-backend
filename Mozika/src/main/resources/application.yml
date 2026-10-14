@@ -44,7 +44,7 @@ spring:
 # envois depuis l'application passent par le stockage disque ci-dessous.
 minio:
   endpoint: http://localhost:9000
-  public-url: http://localhost:9000
+  public-url: http://${adresse_ip}:9000
   access-key: minioadmin
   secret-key: minioadmin
   bucket: kaloy
@@ -96,11 +96,3 @@ app:
   jwt:
     secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
     expiration-ms: 86400000
-
-minio:
-  endpoint: http://${adresse_ip}:9000
-  public-url: http://${adresse_ip}:9000
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket: kaloy-media
-  presigned-url-expiry-days: 7

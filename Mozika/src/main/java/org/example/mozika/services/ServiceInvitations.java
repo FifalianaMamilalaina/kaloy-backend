@@ -38,13 +38,16 @@ public class ServiceInvitations {
     private final ConcertRepository concertRepository;
     private final ParticipationStatuseRepository statutRepository;
     private final ServiceArtisteConnecte serviceArtisteConnecte;
+    private final ServiceNotifications serviceNotifications;
 
     public ServiceInvitations(ConcertRepository concertRepository,
                               ParticipationStatuseRepository statutRepository,
-                              ServiceArtisteConnecte serviceArtisteConnecte) {
+                              ServiceArtisteConnecte serviceArtisteConnecte,
+                              ServiceNotifications serviceNotifications) {
         this.concertRepository = concertRepository;
         this.statutRepository = statutRepository;
         this.serviceArtisteConnecte = serviceArtisteConnecte;
+        this.serviceNotifications = serviceNotifications;
     }
 
     /**
@@ -134,7 +137,34 @@ public class ServiceInvitations {
 
         concert.setStatusidParticipationStatuses(statut);
         concert.setRespondedAt(LocalDateTime.now());
-        return concertRepository.save(concert);
+        Concert enregistre = concertRepository.save(concert);
+        notifierOrganisateur(enregistre, artiste, STATUT_ACCEPTE.equals(reponse));
+        return enregistre;
+    }
+
+    /**
+     * Previent l'organisateur de la reponse recue.
+     *
+     * Sans cela il n'apprend jamais qu'on lui a repondu : il devrait rouvrir
+     * la programmation de son evenement et comparer les statuts a la main.
+     *
+     * Le cas ou l'organisateur est l'artiste invite ne se produit pas — son
+     * creneau est CONFIRMED des la creation, donc repondre renvoie 409 avant
+     * d'arriver ici — mais le garde-fou reste, pour qu'un changement de cette
+     * regle ne lui envoie pas une notification sur sa propre reponse.
+     */
+    private void notifierOrganisateur(Concert concert, Artist repondant, boolean accepte) {
+        Artist organisateur = concert.getCreatedbyartistidArtists();
+        if (organisateur == null || organisateur.getId().equals(repondant.getId())) {
+            return;
+        }
+        serviceNotifications.creer(
+                organisateur.getUseridUsers(),
+                "INVITATION_RESPONSE",
+                ServiceNotifications.libelleReponse(
+                        repondant.getStageName(), accepte, concert.getTitle()),
+                "CONCERT",
+                concert.getId());
     }
 
     private Artist artisteConnecte(String email) {
