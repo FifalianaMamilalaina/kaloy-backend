@@ -29,15 +29,22 @@ import java.util.HashMap;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.ResourceNotFoundException;
 import java.util.List;
+import org.example.mozika.dto.NotificationResponse;
+import org.example.mozika.services.ServiceNotifications;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/notifications")
 @Tag(name = "Notification", description = "Notification Management APIs")
 public class NotificationController  {
 	private final NotificationService notificationService;
+	private final ServiceNotifications serviceNotifications;
 
-	public NotificationController(NotificationService notificationService) {
+	public NotificationController(NotificationService notificationService,
+	                              ServiceNotifications serviceNotifications) {
 	   this.notificationService = notificationService;
+	   this.serviceNotifications = serviceNotifications;
 	}
 
 	@Operation(
@@ -315,5 +322,76 @@ public class NotificationController  {
 	}
 
 
+
+
+	// ── Routes du compte connecte ────────────────────────────────────────────
+	//
+	// Les routes ci-dessus renvoient les notifications de tous les comptes :
+	// c'est du CRUD d'administration. Celles qui suivent sont limitees au
+	// porteur du jeton. Aucune ne prend d'identifiant d'utilisateur en
+	// parametre, sinon il suffirait d'en deviner un pour lire la boite d'un
+	// autre.
+
+	@Operation(
+	    summary = "Mes notifications",
+	    description = "Notifications du compte connecte, les plus recentes d'abord."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me")
+	public ResponseEntity<RestResponse<Page<NotificationResponse>>> mesNotifications(
+	    @AuthenticationPrincipal UserDetails userDetails,
+	    @RequestParam(defaultValue = "0") int page,
+	    @RequestParam(defaultValue = "50") int size
+	) {
+	    Page<NotificationResponse> notifications = serviceNotifications.mesNotifications(
+	            userDetails.getUsername(), PageRequest.of(page, size));
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+	            HttpStatus.OK, "notifications recuperees avec succes", notifications));
+	}
+
+	@Operation(
+	    summary = "Nombre de notifications non lues",
+	    description = "Sert la pastille de l'onglet. Un compte est renvoye, pas la liste."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me/count")
+	public ResponseEntity<RestResponse<Long>> mesNotificationsNonLues(
+	    @AuthenticationPrincipal UserDetails userDetails
+	) {
+	    long nonLues = serviceNotifications.mesNonLues(userDetails.getUsername());
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+	            HttpStatus.OK, "compte recupere avec succes", nonLues));
+	}
+
+	@Operation(
+	    summary = "Marquer une notification lue",
+	    description = "Renvoie 404 si la notification n'existe pas ou appartient a "
+	            + "un autre compte : on ne confirme pas l'existence d'un identifiant."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@PatchMapping("/me/{id}/lu")
+	public ResponseEntity<RestResponse<Void>> marquerLue(
+	    @AuthenticationPrincipal UserDetails userDetails,
+	    @Parameter(description = "Identifiant de la notification", required = true)
+	    @PathVariable Long id
+	) {
+	    serviceNotifications.marquerLue(userDetails.getUsername(), id);
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+	            HttpStatus.OK, "notification marquee lue", null));
+	}
+
+	@Operation(
+	    summary = "Tout marquer lu",
+	    description = "Marque lues toutes les notifications du compte connecte."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@PatchMapping("/me/lues")
+	public ResponseEntity<RestResponse<Void>> marquerToutesLues(
+	    @AuthenticationPrincipal UserDetails userDetails
+	) {
+	    serviceNotifications.marquerToutesLues(userDetails.getUsername());
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+	            HttpStatus.OK, "notifications marquees lues", null));
+	}
 
 }

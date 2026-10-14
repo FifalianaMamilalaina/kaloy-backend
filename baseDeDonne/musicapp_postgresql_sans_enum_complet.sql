@@ -175,7 +175,8 @@ INSERT INTO "notification_types" ("name") VALUES
 ('CONCERT_INVITATION'),
 ('COMMENT_REPLY'),
 ('FOLLOW'),
-('VERIFICATION');
+('VERIFICATION'),
+('INVITATION_RESPONSE');
 
 
 CREATE TABLE "submission_statuses" (
@@ -791,8 +792,9 @@ INSERT INTO verification_channels (name) VALUES ('email'), ('sms');
 -- 6. Statuts des membres de groupe
 INSERT INTO member_statuses (name) VALUES ('active'), ('former');
 
--- 7. Types de notification
-INSERT INTO notification_types (name) VALUES ('NEW_RELEASE'), ('NEW_EVENT'), ('COMMENT_REPLY'), ('EVENT_INVITATION');
+-- 7. Types de notification : ensemences plus haut, avec la table.
+--    Une seconde insertion figurait ici. Elle echouait, name etant
+--    UNIQUE NOT NULL, et interrompait l'installation.
 
 -- 8. Statuts de soumission (pipeline .zip)
 INSERT INTO submission_statuses (name) VALUES ('pending'), ('processing'), ('done'), ('error');

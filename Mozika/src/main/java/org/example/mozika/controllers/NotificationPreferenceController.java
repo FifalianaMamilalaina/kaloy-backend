@@ -29,15 +29,24 @@ import java.util.HashMap;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.ResourceNotFoundException;
 import java.util.List;
+import org.example.mozika.dto.PreferenceNotificationRequest;
+import org.example.mozika.dto.PreferenceNotificationResponse;
+import org.example.mozika.services.ServiceNotifications;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/notificationpreferences")
 @Tag(name = "Notification preference", description = "Notification preference Management APIs")
 public class NotificationPreferenceController  {
 	private final NotificationPreferenceService notificationpreferenceService;
+	private final ServiceNotifications serviceNotifications;
 
-	public NotificationPreferenceController(NotificationPreferenceService notificationpreferenceService) {
+	public NotificationPreferenceController(
+			NotificationPreferenceService notificationpreferenceService,
+			ServiceNotifications serviceNotifications) {
 	   this.notificationpreferenceService = notificationpreferenceService;
+	   this.serviceNotifications = serviceNotifications;
 	}
 
 	@Operation(
@@ -315,5 +324,49 @@ public class NotificationPreferenceController  {
 	}
 
 
+
+
+	// ── Routes du compte connecte ────────────────────────────────────────────
+	//
+	// Les routes ci-dessus portent sur les preferences de tous les comptes :
+	// c'est du CRUD d'administration. Celles qui suivent sont limitees au
+	// porteur du jeton.
+
+	@Operation(
+	    summary = "Mes preferences de notification",
+	    description = "Etat effectif de chaque type pour le compte connecte. Un type "
+	            + "jamais regle est renvoye actif : l'absence de ligne en base vaut "
+	            + "activee. Tous les types sont renvoyes, y compris ceux qu'aucun "
+	            + "code ne produit encore ; c'est l'application qui choisit lesquels "
+	            + "afficher."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me")
+	public ResponseEntity<RestResponse<List<PreferenceNotificationResponse>>> mesPreferences(
+	    @AuthenticationPrincipal UserDetails userDetails
+	) {
+	    List<PreferenceNotificationResponse> preferences =
+	            serviceNotifications.mesPreferences(userDetails.getUsername());
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+	            HttpStatus.OK, "preferences recuperees avec succes", preferences));
+	}
+
+	@Operation(
+	    summary = "Activer ou desactiver un type",
+	    description = "Un seul type par appel : l'ecran bascule un interrupteur a la "
+	            + "fois, et envoyer tout l'etat ecraserait un reglage fait depuis un "
+	            + "autre appareil. Un type inconnu renvoie 404."
+	)
+	@SecurityRequirement(name = "bearerAuth")
+	@PutMapping("/me")
+	public ResponseEntity<RestResponse<Void>> definirPreference(
+	    @AuthenticationPrincipal UserDetails userDetails,
+	    @RequestBody @Valid PreferenceNotificationRequest requete
+	) {
+	    serviceNotifications.definirPreference(
+	            userDetails.getUsername(), requete.getType(), requete.getIsEnabled());
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+	            HttpStatus.OK, "preference enregistree", null));
+	}
 
 }
