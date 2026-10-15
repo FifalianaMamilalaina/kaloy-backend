@@ -20,3 +20,9 @@ MozikaWebapp/.env.local
 *.iml
 .vscode/
 Mozika/uploads/
+# --- Firebase ---
+# Cle de compte de service : elle autorise l envoi de notifications a TOUS les
+# appareils du projet, et donne un acces administrateur. Au meme niveau de
+# sensibilite que keystore.properties cote mobile.
+firebase-service-account.json
+**/firebase-service-account.json

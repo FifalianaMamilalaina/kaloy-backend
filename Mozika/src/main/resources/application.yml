@@ -96,3 +96,8 @@ app:
   jwt:
     secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
     expiration-ms: 86400000
+  firebase:
+    # Cle de compte de service, hors depot (voir .gitignore). Absente, l envoi
+    # reel est desactive et EnvoiPushInactif prend le relais : le serveur
+    # demarre quand meme, sur un poste qui n a pas la cle.
+    fichier-cle: ${user.dir}/firebase-service-account.json
