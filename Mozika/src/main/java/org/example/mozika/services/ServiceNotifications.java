@@ -52,17 +52,20 @@ public class ServiceNotifications {
     private final NotificationPreferenceRepository preferenceRepository;
     private final InteractionTargetRepository cibleRepository;
     private final UserRepository userRepository;
+    private final EnvoiPush envoiPush;
 
     public ServiceNotifications(NotificationRepository notificationRepository,
                                 NotificationTypeRepository typeRepository,
                                 NotificationPreferenceRepository preferenceRepository,
                                 InteractionTargetRepository cibleRepository,
-                                UserRepository userRepository) {
+                                UserRepository userRepository,
+                                EnvoiPush envoiPush) {
         this.notificationRepository = notificationRepository;
         this.typeRepository = typeRepository;
         this.preferenceRepository = preferenceRepository;
         this.cibleRepository = cibleRepository;
         this.userRepository = userRepository;
+        this.envoiPush = envoiPush;
     }
 
     /**
@@ -104,6 +107,36 @@ public class ServiceNotifications {
         }
 
         notificationRepository.save(notification);
+
+        // Le push part APRES l'ecriture, et dans la meme methode : il herite
+        // ainsi du filtre des preferences sans un controle de plus. Couper un
+        // type coupe donc la notification dans l'application ET le push, ce qui
+        // est le comportement attendu et n'a rien coute a obtenir.
+        //
+        // Le titre est le libelle du type et non le contenu : le systeme
+        // affiche la premiere ligne en gras, et « Invitation » suivi du detail
+        // se lit mieux que le detail repete deux fois.
+        envoiPush.envoyer(destinataire, titrePush(type.getName()), contenu,
+                type.getName(), idCible);
+    }
+
+    /**
+     * Premiere ligne de la notification systeme.
+     *
+     * Volontairement court : Android et iOS tronquent au-dela d'une quarantaine
+     * de caracteres sur un ecran de telephone.
+     */
+    private String titrePush(String nomType) {
+        return switch (nomType) {
+            case "CONCERT_INVITATION", "EVENT_INVITATION" -> "Invitation";
+            case "INVITATION_RESPONSE" -> "Reponse a votre invitation";
+            case "FOLLOW" -> "Nouvel abonne";
+            case "NEW_RELEASE" -> "Nouveaute";
+            case "EVENT_REMINDER" -> "Rappel d'evenement";
+            case "COMMENT_REPLY" -> "Reponse a votre commentaire";
+            case "VERIFICATION" -> "Verification de compte";
+            default -> "Kaloy";
+        };
     }
 
     /**
