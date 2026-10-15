@@ -18,4 +18,8 @@ long countByClientuseridUsers(User clientuseridUsers);
 
 
 
+
+// Mes abonnes, et non mes abonnements : countByClientuseridUsers
+// compte les artistes qu'un utilisateur suit, ce qui est l'inverse.
+long countByArtistidArtists(Artist artistidArtists);
 }
