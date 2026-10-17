@@ -26,6 +26,8 @@ public class Playlist  {
 	@JoinColumn(name="visibility_id")
 	@NotNull(message = "VisibilityId cannot be null")
 	private PlaylistVisibilitie visibilityidPlaylistVisibilities;
+	@Column(name="description", nullable = true)
+	private String description;
 	@Column(name="share_token", unique = false, nullable = true)
 	@Size(max = 64)
 	private String shareToken;

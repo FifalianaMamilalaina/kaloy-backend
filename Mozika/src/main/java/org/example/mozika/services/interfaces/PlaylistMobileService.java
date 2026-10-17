@@ -3,6 +3,7 @@ package org.example.mozika.services.interfaces;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.example.mozika.models.EditorialPlaylist;
 import org.example.mozika.models.Playlist;
 
@@ -12,9 +13,13 @@ public interface PlaylistMobileService {
 
 	List<PlaylistUiItemResponse> getMesPlaylists(String email);
 
+	PlaylistUiItemResponse getPlaylist(String email, Long playlistId);
+
 	List<EditorialPlaylist> getFeaturedEditorials();
 
 	Playlist createPlaylist(String email, CreatePlaylistMobileRequest request);
+
+	Playlist updatePlaylist(String email, Long playlistId, UpdatePlaylistMobileRequest request);
 
 	void deletePlaylist(String email, Long playlistId);
 

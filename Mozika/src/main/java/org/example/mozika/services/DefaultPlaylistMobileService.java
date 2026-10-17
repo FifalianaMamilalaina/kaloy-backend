@@ -3,6 +3,7 @@ package org.example.mozika.services;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.example.mozika.exception.ResourceNotFoundException;
 import org.example.mozika.models.*;
 import org.example.mozika.repositories.*;
@@ -73,6 +74,59 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 			));
 		}
 		return result;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public PlaylistUiItemResponse getPlaylist(String email, Long playlistId) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+
+		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+
+		List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylists(playlist);
+		int nombreTitres = songs.size();
+		int dureeSecondes = songs.stream()
+				.mapToInt(ps -> ps.getSongidSongs().getDurationSeconds() != null
+						? ps.getSongidSongs().getDurationSeconds() : 0)
+				.sum();
+		boolean estTelecharge = playlistDownloadRepository
+				.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
+				.map(PlaylistDownload::getIsActive)
+				.orElse(false);
+
+		return new PlaylistUiItemResponse(
+				playlist.getId(),
+				playlist.getName(),
+				null,
+				nombreTitres,
+				dureeSecondes,
+				estTelecharge,
+				playlist.getShareToken(),
+				playlist.getUpdatedAt() != null ? playlist.getUpdatedAt().toString() : null
+		);
+	}
+
+	@Override
+	@Transactional
+	public Playlist updatePlaylist(String email, Long playlistId, UpdatePlaylistMobileRequest request) {
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+
+		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+
+		playlist.setName(request.getName().trim());
+		playlist.setDescription(request.getDescription());
+		playlist.setUpdatedAt(LocalDateTime.now());
+
+		return playlistRepository.save(playlist);
 	}
 
 	@Override

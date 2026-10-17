@@ -43,6 +43,7 @@ import org.example.mozika.services.interfaces.PlaylistMobileService;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -613,6 +614,40 @@ try {
 		playlistMobileService.downloadPlaylist(userDetails.getUsername(), id);
 		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
 				HttpStatus.OK, "Playlist marked for offline use", null));
+	}
+
+	@Operation(summary = "Get one of my playlists", description = "Returns the details of an owned playlist by ID.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me/{id}")
+	public ResponseEntity<RestResponse<PlaylistUiItemResponse>> getMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		PlaylistUiItemResponse playlist = playlistMobileService.getPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist retrieved successfully", playlist));
+	}
+
+	@Operation(summary = "Update one of my playlists", description = "Updates the name and description of an owned playlist.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PutMapping("/me/{id}")
+	public ResponseEntity<RestResponse<Playlist>> updateMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody @Valid UpdatePlaylistMobileRequest request) {
+		Playlist updated = playlistMobileService.updatePlaylist(userDetails.getUsername(), id, request);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist updated successfully", updated));
+	}
+
+	@Operation(summary = "Delete one of my playlists", description = "Deletes an owned playlist (with ownership check).")
+	@SecurityRequirement(name = "bearerAuth")
+	@DeleteMapping("/me/{id}")
+	public ResponseEntity<RestResponse<Void>> deleteMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		playlistMobileService.deletePlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist deleted successfully", null));
 	}
 
 }
