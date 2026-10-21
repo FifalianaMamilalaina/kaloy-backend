@@ -10,8 +10,9 @@ import java.util.List;
 @Setter
 public class MergePlaylistsMobileRequest {
 
-	@NotEmpty(message = "Source playlist IDs cannot be empty")
-	private List<Long> sourceIds;
+	@NotNull(message = "Source playlist IDs cannot be null")
+	@Size(min = 2, message = "At least 2 source playlists are required")
+	private List<@NotNull(message = "Source playlist ID cannot be null") Long> sourceIds;
 
 	@NotBlank(message = "Result name cannot be blank")
 	@Size(max = 150, message = "Result name must be at most 150 characters")

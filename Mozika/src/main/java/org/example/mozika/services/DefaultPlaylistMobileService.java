@@ -186,8 +186,21 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 	@Override
 	@Transactional
 	public Playlist mergePlaylist(String email, MergePlaylistsMobileRequest request) {
-		if (request.getSourceIds().size() < 2) {
+		if (request.getSourceIds() == null || request.getSourceIds().size() < 2) {
 			throw new IllegalArgumentException("Au moins 2 playlists sont nécessaires pour fusionner");
+		}
+		if (request.getSourceIds().stream().anyMatch(Objects::isNull)) {
+			throw new IllegalArgumentException("Les identifiants des playlists sources sont obligatoires");
+		}
+		if (new HashSet<>(request.getSourceIds()).size() != request.getSourceIds().size()) {
+			throw new IllegalArgumentException("Une playlist source ne peut être sélectionnée qu'une seule fois");
+		}
+		if (request.getResultName() == null || request.getResultName().isBlank()) {
+			throw new IllegalArgumentException("Le nom de la playlist résultante est obligatoire");
+		}
+		String resultName = request.getResultName().trim();
+		if (resultName.length() > 150) {
+			throw new IllegalArgumentException("Le nom de la playlist résultante ne peut pas dépasser 150 caractères");
 		}
 
 		User user = userRepository.findByEmail(email)
@@ -209,7 +222,7 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 						.orElseThrow(() -> new ResourceNotFoundException("No playlist visibility found")));
 
 		Playlist result = new Playlist();
-		result.setName(request.getResultName());
+		result.setName(resultName);
 		result.setOwneruseridUsers(user);
 		result.setVisibilityidPlaylistVisibilities(visibility);
 		result.setCreatedAt(LocalDateTime.now());
