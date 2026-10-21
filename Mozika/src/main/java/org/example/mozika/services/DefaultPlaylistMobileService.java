@@ -1,8 +1,12 @@
 package org.example.mozika.services;
 
+import org.example.mozika.dto.playlist.AddSongsResult;
+import org.example.mozika.dto.playlist.AddSongsToPlaylistRequest;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.ReorderSongItem;
 import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.example.mozika.exception.ResourceNotFoundException;
 import org.example.mozika.models.*;
@@ -13,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DefaultPlaylistMobileService implements PlaylistMobileService {
@@ -24,6 +29,7 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 	private final PlaylistVisibilitieRepository playlistVisibilitieRepository;
 	private final EditorialPlaylistRepository editorialPlaylistRepository;
 	private final UserRepository userRepository;
+	private final SongRepository songRepository;
 
 	public DefaultPlaylistMobileService(
 			PlaylistRepository playlistRepository,
@@ -32,7 +38,8 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 			PlaylistFusionRepository playlistFusionRepository,
 			PlaylistVisibilitieRepository playlistVisibilitieRepository,
 			EditorialPlaylistRepository editorialPlaylistRepository,
-			UserRepository userRepository) {
+			UserRepository userRepository,
+			SongRepository songRepository) {
 		this.playlistRepository = playlistRepository;
 		this.playlistSongRepository = playlistSongRepository;
 		this.playlistDownloadRepository = playlistDownloadRepository;
@@ -40,6 +47,7 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 		this.playlistVisibilitieRepository = playlistVisibilitieRepository;
 		this.editorialPlaylistRepository = editorialPlaylistRepository;
 		this.userRepository = userRepository;
+		this.songRepository = songRepository;
 	}
 
 	@Override
@@ -264,5 +272,151 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 		download.setIsActive(true);
 
 		playlistDownloadRepository.save(download);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<PlaylistSongMobileResponse> getSongsInPlaylist(String email, Long playlistId) {
+		userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+
+		List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist);
+		List<PlaylistSongMobileResponse> result = new ArrayList<>();
+		for (PlaylistSong ps : songs) {
+			Song song = ps.getSongidSongs();
+			result.add(new PlaylistSongMobileResponse(
+					ps.getId(),
+					song.getId(),
+					song.getTitle(),
+					song.getArtistidArtists() != null ? song.getArtistidArtists().getStageName() : "",
+					song.getDurationSeconds(),
+					null,
+					ps.getPosition(),
+					ps.getAddedAt() != null ? ps.getAddedAt().toString() : null
+			));
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional
+	public AddSongsResult addSongsToPlaylist(String email, Long playlistId, AddSongsToPlaylistRequest request) {
+		userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+
+		List<PlaylistSong> existing = playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist);
+		Set<Long> existingIds = existing.stream()
+				.map(ps -> ps.getSongidSongs().getId())
+				.collect(Collectors.toSet());
+		int nextPosition = existing.isEmpty() ? 0 : existing.get(existing.size() - 1).getPosition() + 1;
+
+		List<PlaylistSongMobileResponse> added = new ArrayList<>();
+		List<Long> alreadyPresent = new ArrayList<>();
+		List<Long> notFound = new ArrayList<>();
+
+		for (Long songId : request.getSongIds()) {
+			if (existingIds.contains(songId)) {
+				alreadyPresent.add(songId);
+				continue;
+			}
+			Optional<Song> songOpt = songRepository.findById(songId);
+			if (songOpt.isEmpty()) {
+				notFound.add(songId);
+				continue;
+			}
+			Song song = songOpt.get();
+			PlaylistSong newPs = new PlaylistSong();
+			newPs.setPlaylistidPlaylists(playlist);
+			newPs.setSongidSongs(song);
+			newPs.setPosition(nextPosition++);
+			newPs.setAddedAt(LocalDateTime.now());
+			PlaylistSong saved = playlistSongRepository.save(newPs);
+			existingIds.add(songId);
+			added.add(new PlaylistSongMobileResponse(
+					saved.getId(),
+					song.getId(),
+					song.getTitle(),
+					song.getArtistidArtists() != null ? song.getArtistidArtists().getStageName() : "",
+					song.getDurationSeconds(),
+					null,
+					saved.getPosition(),
+					saved.getAddedAt().toString()
+			));
+		}
+
+		playlist.setUpdatedAt(LocalDateTime.now());
+		playlistRepository.save(playlist);
+
+		return new AddSongsResult(added, alreadyPresent, notFound);
+	}
+
+	@Override
+	@Transactional
+	public void removeSongFromPlaylist(String email, Long playlistId, Long songId) {
+		userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+		Song song = songRepository.findById(songId)
+				.orElseThrow(() -> new ResourceNotFoundException("Song not found: " + songId));
+		PlaylistSong ps = playlistSongRepository.findByPlaylistidPlaylistsAndSongidSongs(playlist, song)
+				.orElseThrow(() -> new ResourceNotFoundException("Song not in playlist"));
+		playlistSongRepository.delete(ps);
+
+		List<PlaylistSong> remaining = playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist);
+		for (int i = 0; i < remaining.size(); i++) {
+			remaining.get(i).setPosition(i);
+		}
+		playlistSongRepository.saveAll(remaining);
+
+		playlist.setUpdatedAt(LocalDateTime.now());
+		playlistRepository.save(playlist);
+	}
+
+	@Override
+	@Transactional
+	public void reorderSongs(String email, Long playlistId, List<ReorderSongItem> items) {
+		userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+
+		List<PlaylistSong> all = playlistSongRepository.findByPlaylistidPlaylists(playlist);
+		Map<Long, PlaylistSong> songIdToPs = new HashMap<>();
+		for (PlaylistSong ps : all) {
+			songIdToPs.put(ps.getSongidSongs().getId(), ps);
+		}
+
+		if (items.size() != all.size()) {
+			throw new IllegalArgumentException("Reorder list must contain all " + all.size() + " songs in the playlist");
+		}
+
+		for (ReorderSongItem item : items) {
+			PlaylistSong ps = songIdToPs.get(item.getSongId());
+			if (ps == null) {
+				throw new ResourceNotFoundException("Song not in playlist: " + item.getSongId());
+			}
+			ps.setPosition(item.getPosition());
+		}
+		playlistSongRepository.saveAll(all);
+
+		playlist.setUpdatedAt(LocalDateTime.now());
+		playlistRepository.save(playlist);
 	}
 }

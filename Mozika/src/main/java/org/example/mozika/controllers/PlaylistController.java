@@ -40,9 +40,13 @@ import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.ResourceNotFoundException;
 import java.util.List;
 import org.example.mozika.services.interfaces.PlaylistMobileService;
+import org.example.mozika.dto.playlist.AddSongsResult;
+import org.example.mozika.dto.playlist.AddSongsToPlaylistRequest;
+import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.example.mozika.dto.playlist.ReorderSongItem;
 import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -648,6 +652,53 @@ try {
 		playlistMobileService.deletePlaylist(userDetails.getUsername(), id);
 		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
 				HttpStatus.OK, "Playlist deleted successfully", null));
+	}
+
+	@Operation(summary = "List songs in my playlist", description = "Returns songs ordered by position for an owned playlist.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me/{id}/songs")
+	public ResponseEntity<RestResponse<List<PlaylistSongMobileResponse>>> getSongsInMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		List<PlaylistSongMobileResponse> songs = playlistMobileService.getSongsInPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Songs retrieved successfully", songs));
+	}
+
+	@Operation(summary = "Add songs to my playlist", description = "Adds one or more songs to an owned playlist. Returns lists of added, already-present, and not-found IDs.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me/{id}/songs")
+	public ResponseEntity<RestResponse<AddSongsResult>> addSongsToMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody @Valid AddSongsToPlaylistRequest request) {
+		AddSongsResult result = playlistMobileService.addSongsToPlaylist(userDetails.getUsername(), id, request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Songs added successfully", result));
+	}
+
+	@Operation(summary = "Remove a song from my playlist", description = "Removes a song from an owned playlist and renormalizes positions.")
+	@SecurityRequirement(name = "bearerAuth")
+	@DeleteMapping("/me/{id}/songs/{songId}")
+	public ResponseEntity<RestResponse<Void>> removeSongFromMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@PathVariable Long songId) {
+		playlistMobileService.removeSongFromPlaylist(userDetails.getUsername(), id, songId);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Song removed from playlist", null));
+	}
+
+	@Operation(summary = "Reorder songs in my playlist", description = "Reorders songs in an owned playlist. Must include all songs with new positions.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PutMapping("/me/{id}/songs/reorder")
+	public ResponseEntity<RestResponse<Void>> reorderSongsInMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody List<ReorderSongItem> items) {
+		playlistMobileService.reorderSongs(userDetails.getUsername(), id, items);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Songs reordered successfully", null));
 	}
 
 }

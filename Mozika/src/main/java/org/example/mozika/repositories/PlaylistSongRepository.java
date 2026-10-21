@@ -5,6 +5,7 @@ import org.example.mozika.models.PlaylistSong;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
+import java.util.Optional;
 import org.example.mozika.models.Playlist;
 import org.example.mozika.models.Song;
 
@@ -15,6 +16,7 @@ public interface PlaylistSongRepository extends JpaRepository<PlaylistSong, Long
 List<PlaylistSong> findByPlaylistidPlaylists(Playlist playlistidPlaylists);
 List<PlaylistSong> findByPlaylistidPlaylistsOrderByPositionAsc(Playlist playlistidPlaylists);
 List<PlaylistSong> findBySongidSongs(Song songidSongs);
+Optional<PlaylistSong> findByPlaylistidPlaylistsAndSongidSongs(Playlist playlist, Song song);
 
 
 
