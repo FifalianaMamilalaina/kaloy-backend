@@ -48,6 +48,10 @@ import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
 import org.example.mozika.dto.playlist.ReorderSongItem;
 import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
+import org.example.mozika.dto.playlist.PlaylistGenerationRequest;
+import org.example.mozika.dto.playlist.PlaylistGenerationProposalResponse;
+import org.example.mozika.dto.playlist.SaveGeneratedPlaylistRequest;
+import org.example.mozika.services.PlaylistGenerationService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -59,13 +63,16 @@ public class PlaylistController  {
 	private final DownloadService downloadService;
 	private final PlaylistSongService playlistsongService;
 	private final PlaylistMobileService playlistMobileService;
+	private final PlaylistGenerationService playlistGenerationService;
 
 	public PlaylistController(PlaylistService playlistService, DownloadService downloadService,
-			PlaylistSongService playlistsongService, PlaylistMobileService playlistMobileService) {
+			PlaylistSongService playlistsongService, PlaylistMobileService playlistMobileService,
+			PlaylistGenerationService playlistGenerationService) {
 		this.playlistService = playlistService;
 		this.downloadService = downloadService;
 		this.playlistsongService = playlistsongService;
 		this.playlistMobileService = playlistMobileService;
+		this.playlistGenerationService = playlistGenerationService;
 	}
 
 	@Operation(
@@ -596,6 +603,28 @@ try {
 		Playlist created = playlistMobileService.createPlaylist(userDetails.getUsername(), request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
 				HttpStatus.CREATED, "Playlist created successfully", created));
+	}
+
+	@Operation(summary = "Generate playlist proposals from listening criteria")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me/generate")
+	public ResponseEntity<RestResponse<List<PlaylistGenerationProposalResponse>>> generatePlaylists(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid PlaylistGenerationRequest request) {
+		List<PlaylistGenerationProposalResponse> proposals = playlistGenerationService.generate(request);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist proposals generated successfully", proposals));
+	}
+
+	@Operation(summary = "Save a generated playlist proposal")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me/generated")
+	public ResponseEntity<RestResponse<Playlist>> saveGeneratedPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid SaveGeneratedPlaylistRequest request) {
+		Playlist playlist = playlistGenerationService.save(userDetails.getUsername(), request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Generated playlist saved successfully", playlist));
 	}
 
 	@Operation(summary = "Merge playlists", description = "Merges 2 or more owned playlists into a new one.")

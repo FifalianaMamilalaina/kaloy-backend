@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Setter
 @Getter
@@ -23,6 +25,22 @@ public class PlaylistGenerationCriteria {
 
 	@Column(name = "target_duration_seconds", nullable = true)
 	private Integer targetDurationSeconds;
+
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "included_genres", columnDefinition = "text[]")
+	private String[] includedGenres;
+
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "excluded_genres", columnDefinition = "text[]")
+	private String[] excludedGenres;
+
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "included_artist_ids", columnDefinition = "bigint[]")
+	private Long[] includedArtistIds;
+
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "excluded_artist_ids", columnDefinition = "bigint[]")
+	private Long[] excludedArtistIds;
 
 	@Column(name = "created_at", nullable = false)
 	@NotNull(message = "CreatedAt cannot be null")
