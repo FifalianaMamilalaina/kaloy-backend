@@ -6,12 +6,17 @@ import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
 import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.PublicPlaylistPageResponse;
 import org.example.mozika.dto.playlist.ReorderSongItem;
 import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.example.mozika.exception.ResourceNotFoundException;
 import org.example.mozika.models.*;
 import org.example.mozika.repositories.*;
 import org.example.mozika.services.interfaces.PlaylistMobileService;
+import org.example.mozika.services.interfaces.StorageService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +35,9 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 	private final EditorialPlaylistRepository editorialPlaylistRepository;
 	private final UserRepository userRepository;
 	private final SongRepository songRepository;
+	private final UsersInfosRepository usersInfosRepository;
+	private final ArtistRepository artistRepository;
+	private final StorageService storageService;
 
 	public DefaultPlaylistMobileService(
 			PlaylistRepository playlistRepository,
@@ -39,7 +47,10 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 			PlaylistVisibilitieRepository playlistVisibilitieRepository,
 			EditorialPlaylistRepository editorialPlaylistRepository,
 			UserRepository userRepository,
-			SongRepository songRepository) {
+			SongRepository songRepository,
+			UsersInfosRepository usersInfosRepository,
+			ArtistRepository artistRepository,
+			StorageService storageService) {
 		this.playlistRepository = playlistRepository;
 		this.playlistSongRepository = playlistSongRepository;
 		this.playlistDownloadRepository = playlistDownloadRepository;
@@ -48,6 +59,9 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 		this.editorialPlaylistRepository = editorialPlaylistRepository;
 		this.userRepository = userRepository;
 		this.songRepository = songRepository;
+		this.usersInfosRepository = usersInfosRepository;
+		this.artistRepository = artistRepository;
+		this.storageService = storageService;
 	}
 
 	@Override
@@ -56,32 +70,7 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
 
 		List<Playlist> playlists = playlistRepository.findByOwneruseridUsers(user);
-		List<PlaylistUiItemResponse> result = new ArrayList<>();
-
-		for (Playlist playlist : playlists) {
-			List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylists(playlist);
-			int nombreTitres = songs.size();
-			int dureeSecondes = songs.stream()
-					.mapToInt(ps -> ps.getSongidSongs().getDurationSeconds() != null
-							? ps.getSongidSongs().getDurationSeconds() : 0)
-					.sum();
-			boolean estTelecharge = playlistDownloadRepository
-					.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
-					.map(PlaylistDownload::getIsActive)
-					.orElse(false);
-
-			result.add(new PlaylistUiItemResponse(
-					playlist.getId(),
-					playlist.getName(),
-					null,
-					nombreTitres,
-					dureeSecondes,
-					estTelecharge,
-					playlist.getShareToken(),
-					playlist.getUpdatedAt() != null ? playlist.getUpdatedAt().toString() : null
-			));
-		}
-		return result;
+		return playlists.stream().map(playlist -> toUiItem(user, playlist)).toList();
 	}
 
 	@Override
@@ -97,27 +86,69 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
 		}
 
-		List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylists(playlist);
-		int nombreTitres = songs.size();
-		int dureeSecondes = songs.stream()
-				.mapToInt(ps -> ps.getSongidSongs().getDurationSeconds() != null
-						? ps.getSongidSongs().getDurationSeconds() : 0)
-				.sum();
-		boolean estTelecharge = playlistDownloadRepository
-				.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
-				.map(PlaylistDownload::getIsActive)
-				.orElse(false);
+		return toUiItem(user, playlist);
+	}
 
-		return new PlaylistUiItemResponse(
-				playlist.getId(),
-				playlist.getName(),
-				null,
-				nombreTitres,
-				dureeSecondes,
-				estTelecharge,
-				playlist.getShareToken(),
-				playlist.getUpdatedAt() != null ? playlist.getUpdatedAt().toString() : null
-		);
+	@Override
+	@Transactional
+	public PlaylistUiItemResponse changeVisibility(String email, Long playlistId, String visibilityName) {
+		if (!"PRIVATE".equals(visibilityName) && !"PUBLIC".equals(visibilityName)) {
+			throw new IllegalArgumentException("Visibility must be PRIVATE or PUBLIC");
+		}
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		if (!isOwner(email, playlist)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
+		PlaylistVisibilitie visibility = playlistVisibilitieRepository.findByName(visibilityName)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist visibility not found: " + visibilityName));
+		playlist.setVisibilityidPlaylistVisibilities(visibility);
+		playlist.setUpdatedAt(LocalDateTime.now());
+		return toUiItem(user, playlistRepository.save(playlist));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public PublicPlaylistPageResponse discoverPublicPlaylists(String email, String search, int page, int size) {
+		User viewer = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		if (page < 0 || size < 1 || size > 50) {
+			throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 50");
+		}
+		String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+		PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+		Page<Playlist> playlists = normalizedSearch == null
+				? playlistRepository.findPublicPlaylists(pageable)
+				: playlistRepository.searchPublicPlaylists(normalizedSearch, pageable);
+		List<PlaylistUiItemResponse> content = playlists.getContent().stream()
+				.map(playlist -> toUiItem(viewer, playlist))
+				.toList();
+		return new PublicPlaylistPageResponse(content, playlists.getNumber(), playlists.getSize(),
+				playlists.getTotalPages(), playlists.getTotalElements(), playlists.isLast());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public PlaylistUiItemResponse getPublicPlaylist(String email, Long playlistId) {
+		User viewer = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.filter(DefaultPlaylistMobileService::isPublic)
+				.orElseThrow(() -> new ResourceNotFoundException("Public playlist not found: " + playlistId));
+		return toUiItem(viewer, playlist);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<PlaylistSongMobileResponse> getPublicPlaylistSongs(String email, Long playlistId) {
+		userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.filter(DefaultPlaylistMobileService::isPublic)
+				.orElseThrow(() -> new ResourceNotFoundException("Public playlist not found: " + playlistId));
+		return toSongResponses(playlist);
 	}
 
 	@Override
@@ -268,6 +299,9 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 
 		Playlist playlist = playlistRepository.findById(playlistId)
 				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		if (!isOwner(email, playlist) && !isPublic(playlist)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
+		}
 
 		long count = playlistDownloadRepository.countByUseridUsersAndIsActiveTrue(user);
 		if (count >= 10) {
@@ -294,10 +328,13 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
 		Playlist playlist = playlistRepository.findById(playlistId)
 				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
-		if (!playlist.getOwneruseridUsers().getEmail().equals(email)) {
+		if (!isOwner(email, playlist)) {
 			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
 		}
+		return toSongResponses(playlist);
+	}
 
+	private List<PlaylistSongMobileResponse> toSongResponses(Playlist playlist) {
 		List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist);
 		List<PlaylistSongMobileResponse> result = new ArrayList<>();
 		for (PlaylistSong ps : songs) {
@@ -314,6 +351,77 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 			));
 		}
 		return result;
+	}
+
+	private PlaylistUiItemResponse toUiItem(User viewer, Playlist playlist) {
+		List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylists(playlist);
+		int duration = songs.stream()
+				.mapToInt(ps -> ps.getSongidSongs().getDurationSeconds() == null
+						? 0 : ps.getSongidSongs().getDurationSeconds())
+				.sum();
+		boolean downloaded = playlistDownloadRepository
+				.findByUseridUsersAndPlaylistidPlaylists(viewer, playlist)
+				.map(PlaylistDownload::getIsActive)
+				.orElse(false);
+
+		User owner = playlist.getOwneruseridUsers();
+		UsersInfos info = usersInfosRepository.findByUser(owner).stream().findFirst().orElse(null);
+		Artist artist = artistRepository.findByUseridUsers(owner).stream().findFirst().orElse(null);
+		String ownerName = info != null && info.getUserName() != null && !info.getUserName().isBlank()
+				? info.getUserName()
+				: info != null && hasName(info)
+						? (nullToEmpty(info.getName()) + " " + nullToEmpty(info.getLastName())).trim()
+						: artist != null && artist.getStageName() != null && !artist.getStageName().isBlank()
+								? artist.getStageName()
+								: owner.getEmail();
+		String ownerPhotoUrl = info != null && info.getPhotoUrl() != null && !info.getPhotoUrl().isBlank()
+				? resolvePhotoUrl(info.getPhotoUrl())
+				: artist != null ? resolvePhotoUrl(artist.getPhotoUrl()) : null;
+
+		return new PlaylistUiItemResponse(
+				playlist.getId(),
+				playlist.getName(),
+				null,
+				songs.size(),
+				duration,
+				downloaded,
+				null,
+				playlist.getUpdatedAt() != null ? playlist.getUpdatedAt().toString() : null,
+				visibilityName(playlist),
+				ownerName,
+				ownerPhotoUrl,
+				owner != null && viewer != null && Objects.equals(viewer.getId(), owner.getId()));
+	}
+
+	private String resolvePhotoUrl(String photoUrl) {
+		if (photoUrl == null || photoUrl.isBlank()) return null;
+		return photoUrl.startsWith("profile-photos/")
+				? storageService.getPresignedUrl(photoUrl)
+				: photoUrl;
+	}
+
+	private static boolean hasName(UsersInfos info) {
+		return (info.getName() != null && !info.getName().isBlank())
+				|| (info.getLastName() != null && !info.getLastName().isBlank());
+	}
+
+	private static String nullToEmpty(String value) {
+		return value == null ? "" : value;
+	}
+
+	private static String visibilityName(Playlist playlist) {
+		return playlist.getVisibilityidPlaylistVisibilities() == null
+				? "PRIVATE"
+				: playlist.getVisibilityidPlaylistVisibilities().getName();
+	}
+
+	private static boolean isPublic(Playlist playlist) {
+		return "PUBLIC".equalsIgnoreCase(visibilityName(playlist));
+	}
+
+	private static boolean isOwner(String email, Playlist playlist) {
+		return playlist.getOwneruseridUsers() != null
+				&& Objects.equals(playlist.getOwneruseridUsers().getEmail(), email);
 	}
 
 	@Override

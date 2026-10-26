@@ -15,12 +15,19 @@ import org.example.mozika.repositories.PlaylistSongRepository;
 import org.example.mozika.repositories.PlaylistVisibilitieRepository;
 import org.example.mozika.repositories.SongRepository;
 import org.example.mozika.repositories.UserRepository;
+import org.example.mozika.repositories.UsersInfosRepository;
+import org.example.mozika.repositories.ArtistRepository;
+import org.example.mozika.services.interfaces.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +54,9 @@ class DefaultPlaylistMobileServiceTest {
 	@Mock private EditorialPlaylistRepository editorialPlaylistRepository;
 	@Mock private UserRepository userRepository;
 	@Mock private SongRepository songRepository;
+	@Mock private UsersInfosRepository usersInfosRepository;
+	@Mock private ArtistRepository artistRepository;
+	@Mock private StorageService storageService;
 
 	private DefaultPlaylistMobileService service;
 	private User owner;
@@ -61,7 +71,10 @@ class DefaultPlaylistMobileServiceTest {
 				playlistVisibilitieRepository,
 				editorialPlaylistRepository,
 				userRepository,
-				songRepository);
+				songRepository,
+				usersInfosRepository,
+				artistRepository,
+				storageService);
 		owner = new User();
 		owner.setEmail(OWNER_EMAIL);
 		lenient().when(userRepository.findByEmail(OWNER_EMAIL)).thenReturn(Optional.of(owner));
@@ -132,6 +145,74 @@ class DefaultPlaylistMobileServiceTest {
 		assertThrows(IllegalArgumentException.class, () -> service.mergePlaylist(OWNER_EMAIL, request));
 		verify(userRepository, never()).findByEmail(any());
 		verify(playlistRepository, never()).save(any(Playlist.class));
+	}
+
+	@Test
+	void visibilityCanOnlyBeChangedByOwnerAndPublicSongsAreReadable() {
+		owner.setId(1L);
+		Playlist playlist = playlist(10L, owner);
+		PlaylistVisibilitie publicVisibility = new PlaylistVisibilitie();
+		publicVisibility.setName("PUBLIC");
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistVisibilitieRepository.findByName("PUBLIC")).thenReturn(Optional.of(publicVisibility));
+		when(playlistSongRepository.findByPlaylistidPlaylists(playlist)).thenReturn(List.of());
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.empty());
+		when(usersInfosRepository.findByUser(owner)).thenReturn(List.of());
+		when(artistRepository.findByUseridUsers(owner)).thenReturn(List.of());
+
+		var response = service.changeVisibility(OWNER_EMAIL, 10L, "PUBLIC");
+
+		assertEquals("PUBLIC", response.getVisibility());
+		assertEquals(true, response.isOwner());
+		verify(playlistRepository).save(playlist);
+	}
+
+	@Test
+	void privatePlaylistCannotBeReadThroughPublicPlaylistEndpoint() {
+		Playlist playlist = playlist(10L, owner);
+		PlaylistVisibilitie privateVisibility = new PlaylistVisibilitie();
+		privateVisibility.setName("PRIVATE");
+		playlist.setVisibilityidPlaylistVisibilities(privateVisibility);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+
+		assertThrows(ResourceNotFoundException.class,
+				() -> service.getPublicPlaylist(OWNER_EMAIL, 10L));
+		verify(playlistSongRepository, never()).findByPlaylistidPlaylists(any());
+	}
+
+	@Test
+	void anotherUserCannotChangePlaylistVisibility() {
+		User another = new User();
+		another.setEmail("another@example.com");
+
+		assertThrows(ResourceNotFoundException.class,
+				() -> service.changeVisibility(another.getEmail(), 10L, "PUBLIC"));
+		verify(playlistRepository, never()).save(any(Playlist.class));
+	}
+
+	@Test
+	void publicDiscoveryWithoutSearchUsesUnfilteredQuery() {
+		when(playlistRepository.findPublicPlaylists(any())).thenReturn(new PageImpl<>(List.of()));
+
+		service.discoverPublicPlaylists(OWNER_EMAIL, null, 0, 20);
+
+		verify(playlistRepository).findPublicPlaylists(
+				PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "updatedAt")));
+		verify(playlistRepository, never()).searchPublicPlaylists(any(), any());
+	}
+
+	@Test
+	void publicDiscoveryWithSearchUsesSearchQuery() {
+		when(playlistRepository.searchPublicPlaylists(any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+		service.discoverPublicPlaylists(OWNER_EMAIL, "  jazz  ", 0, 20);
+
+		verify(playlistRepository).searchPublicPlaylists(
+				org.mockito.ArgumentMatchers.eq("jazz"),
+				org.mockito.ArgumentMatchers.eq(
+						PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "updatedAt"))));
+		verify(playlistRepository, never()).findPublicPlaylists(any());
 	}
 
 	private static Playlist playlist(Long id, User owner) {

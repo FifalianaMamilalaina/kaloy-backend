@@ -6,6 +6,7 @@ import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
 import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.PublicPlaylistPageResponse;
 import org.example.mozika.dto.playlist.ReorderSongItem;
 import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.example.mozika.models.EditorialPlaylist;
@@ -18,6 +19,14 @@ public interface PlaylistMobileService {
 	List<PlaylistUiItemResponse> getMesPlaylists(String email);
 
 	PlaylistUiItemResponse getPlaylist(String email, Long playlistId);
+
+	PlaylistUiItemResponse changeVisibility(String email, Long playlistId, String visibility);
+
+	PublicPlaylistPageResponse discoverPublicPlaylists(String email, String search, int page, int size);
+
+	PlaylistUiItemResponse getPublicPlaylist(String email, Long playlistId);
+
+	List<PlaylistSongMobileResponse> getPublicPlaylistSongs(String email, Long playlistId);
 
 	List<EditorialPlaylist> getFeaturedEditorials();
 

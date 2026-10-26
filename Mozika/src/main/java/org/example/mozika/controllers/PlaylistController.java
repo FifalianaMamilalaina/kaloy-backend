@@ -44,6 +44,8 @@ import org.example.mozika.dto.playlist.AddSongsResult;
 import org.example.mozika.dto.playlist.AddSongsToPlaylistRequest;
 import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.PlaylistVisibilityRequest;
+import org.example.mozika.dto.playlist.PublicPlaylistPageResponse;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
 import org.example.mozika.dto.playlist.ReorderSongItem;
@@ -592,6 +594,60 @@ try {
 		List<PlaylistUiItemResponse> playlists = playlistMobileService.getMesPlaylists(userDetails.getUsername());
 		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
 				HttpStatus.OK, "Playlists retrieved successfully", playlists));
+	}
+
+	@Operation(summary = "Discover public playlists", description = "Searches playlists shared with all authenticated users.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/public")
+	public ResponseEntity<RestResponse<PublicPlaylistPageResponse>> discoverPublicPlaylists(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) String search,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size) {
+		if (page < 0 || size < 1 || size > 50) {
+			return ResponseEntity.badRequest().body(RestResponse.buildErrorResponse(
+					HttpStatus.BAD_REQUEST, "Page must be non-negative and size must be between 1 and 50", null));
+		}
+		PublicPlaylistPageResponse playlists = playlistMobileService.discoverPublicPlaylists(
+				userDetails.getUsername(), search, page, size);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Public playlists retrieved successfully", playlists));
+	}
+
+	@Operation(summary = "Get a public playlist")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/public/{id}")
+	public ResponseEntity<RestResponse<PlaylistUiItemResponse>> getPublicPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		PlaylistUiItemResponse playlist = playlistMobileService.getPublicPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Public playlist retrieved successfully", playlist));
+	}
+
+	@Operation(summary = "List songs from a public playlist")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/public/{id}/songs")
+	public ResponseEntity<RestResponse<List<PlaylistSongMobileResponse>>> getPublicPlaylistSongs(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		List<PlaylistSongMobileResponse> songs =
+				playlistMobileService.getPublicPlaylistSongs(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Public playlist songs retrieved successfully", songs));
+	}
+
+	@Operation(summary = "Change playlist visibility", description = "Only the owner can make a playlist public or private.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PutMapping("/{id}/visibility")
+	public ResponseEntity<RestResponse<PlaylistUiItemResponse>> changePlaylistVisibility(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody @Valid PlaylistVisibilityRequest request) {
+		PlaylistUiItemResponse playlist = playlistMobileService.changeVisibility(
+				userDetails.getUsername(), id, request.getVisibility());
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist visibility updated successfully", playlist));
 	}
 
 	@Operation(summary = "Create a playlist (mobile)", description = "Creates a new private playlist for the authenticated user.")

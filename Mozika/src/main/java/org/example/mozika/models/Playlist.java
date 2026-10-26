@@ -28,7 +28,7 @@ public class Playlist  {
 	private PlaylistVisibilitie visibilityidPlaylistVisibilities;
 	@Column(name="description", nullable = true)
 	private String description;
-	@Column(name="share_token", unique = false, nullable = true)
+	@Column(name="share_token", unique = true, nullable = true)
 	@Size(max = 64)
 	private String shareToken;
 	@Column(name="created_at", unique = false, nullable = false)
