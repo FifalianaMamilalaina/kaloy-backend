@@ -2,7 +2,9 @@ package org.example.mozika.services;
 
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
 import org.example.mozika.exception.ResourceNotFoundException;
+import org.example.mozika.exception.NondownloadableSongsException;
 import org.example.mozika.models.Playlist;
+import org.example.mozika.models.PlaylistDownload;
 import org.example.mozika.models.PlaylistSong;
 import org.example.mozika.models.PlaylistVisibilitie;
 import org.example.mozika.models.Song;
@@ -31,10 +33,17 @@ import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.concurrent.TimeUnit;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -213,6 +222,251 @@ class DefaultPlaylistMobileServiceTest {
 				org.mockito.ArgumentMatchers.eq(
 						PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "updatedAt"))));
 		verify(playlistRepository, never()).findPublicPlaylists(any());
+	}
+
+	@Test
+	void offlineRequestAllowsOwnerAndReturnsOrderedSongMetadataAndFreshUrl() {
+		Playlist playlist = playlist(10L, owner);
+		Song first = downloadableSong(1L, "first-key");
+		Song second = downloadableSong(2L, "second-key");
+		PlaylistSong firstLink = playlistSong(playlist, first, 1);
+		PlaylistSong secondLink = playlistSong(playlist, second, 2);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist))
+				.thenReturn(List.of(firstLink, secondLink));
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.empty());
+		when(playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(owner)).thenReturn(List.of());
+		when(playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any()))
+				.thenReturn(0L);
+		when(playlistDownloadRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(storageService.getPresignedUrl("first-key", 24, TimeUnit.HOURS)).thenReturn("https://minio/first");
+		when(storageService.getPresignedUrl("second-key", 24, TimeUnit.HOURS)).thenReturn("https://minio/second");
+
+		var response = service.requestOfflineDownload(OWNER_EMAIL, 10L);
+
+		assertEquals(10L, response.playlistId());
+		assertEquals(List.of(1L, 2L), response.songs().stream().map(song -> song.songId()).toList());
+		assertEquals(List.of("https://minio/first", "https://minio/second"),
+				response.songs().stream().map(song -> song.downloadUrl()).toList());
+		assertEquals(true, response.active());
+	}
+
+	@Test
+	void offlineUrlsSupportProtectedUploadsAndAbsoluteAudioSources() {
+		Playlist playlist = playlist(10L, owner);
+		PlaylistSong upload = playlistSong(playlist, downloadableSong(1L, "/uploads/audio.m4a"), 1);
+		PlaylistSong external = playlistSong(
+				playlist, downloadableSong(2L, "https://cdn.example/audio.mp3"), 2);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist))
+				.thenReturn(List.of(upload, external));
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.empty());
+		when(playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(owner)).thenReturn(List.of());
+		when(playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any()))
+				.thenReturn(0L);
+		when(playlistDownloadRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		ReflectionTestUtils.setField(service, "contextPath", "/mozika");
+
+		var response = service.requestOfflineDownload(OWNER_EMAIL, 10L);
+
+		assertEquals("/mozika/media/songs/1/offline-download", response.songs().get(0).downloadUrl());
+		assertEquals("https://cdn.example/audio.mp3", response.songs().get(1).downloadUrl());
+		verify(storageService, never()).getPresignedUrl(any(), anyInt(), any());
+	}
+
+	@Test
+	void offlineRequestAcceptsMinioObjectKeysContainingSpacesWithoutChangingThem() {
+		Playlist playlist = playlist(3L, owner);
+		Song first = downloadableSong(1L, "Eh sambatra sy tretrika - Vetsonkira(M4A_128K)-audio.m4a");
+		Song second = downloadableSong(2L, "Reko/Gasy Tsara.mp3");
+		when(playlistRepository.findById(3L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist))
+				.thenReturn(List.of(playlistSong(playlist, first, 0), playlistSong(playlist, second, 1)));
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.empty());
+		when(playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(owner)).thenReturn(List.of());
+		when(playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any()))
+				.thenReturn(0L);
+		when(playlistDownloadRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(storageService.getPresignedUrl(first.getAudioUrl(), 24, TimeUnit.HOURS))
+				.thenReturn("https://minio/first");
+		when(storageService.getPresignedUrl(second.getAudioUrl(), 24, TimeUnit.HOURS))
+				.thenReturn("https://minio/second");
+
+		var response = service.requestOfflineDownload(OWNER_EMAIL, 3L);
+
+		assertEquals(List.of("https://minio/first", "https://minio/second"),
+				response.songs().stream().map(song -> song.downloadUrl()).toList());
+		verify(storageService).getPresignedUrl(first.getAudioUrl(), 24, TimeUnit.HOURS);
+		verify(storageService).getPresignedUrl(second.getAudioUrl(), 24, TimeUnit.HOURS);
+	}
+
+	@Test
+	void offlineRequestAllowsPublicPlaylistButRejectsPrivateNonOwner() {
+		User viewer = new User();
+		viewer.setEmail("viewer@example.com");
+		when(userRepository.findByEmail(viewer.getEmail())).thenReturn(Optional.of(viewer));
+		Playlist playlist = playlist(10L, owner);
+		PlaylistVisibilitie publicVisibility = new PlaylistVisibilitie();
+		publicVisibility.setName("PUBLIC");
+		playlist.setVisibilityidPlaylistVisibilities(publicVisibility);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist)).thenReturn(List.of());
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(viewer, playlist))
+				.thenReturn(Optional.empty());
+		when(playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(viewer)).thenReturn(List.of());
+		when(playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any()))
+				.thenReturn(0L);
+		when(playlistDownloadRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		assertEquals(10L, service.requestOfflineDownload(viewer.getEmail(), 10L).playlistId());
+
+		playlist.setVisibilityidPlaylistVisibilities(new PlaylistVisibilitie());
+		assertThrows(ResourceNotFoundException.class,
+				() -> service.requestOfflineDownload(viewer.getEmail(), 10L));
+	}
+
+	@Test
+	void nondownloadableSongIdsAreReportedWithoutCreatingDownload() {
+		Playlist playlist = playlist(10L, owner);
+		PlaylistSong link = playlistSong(playlist, song(42L), 1);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist)).thenReturn(List.of(link));
+
+		NondownloadableSongsException exception = assertThrows(NondownloadableSongsException.class,
+				() -> service.requestOfflineDownload(OWNER_EMAIL, 10L));
+
+		assertEquals(List.of(42L), exception.getSongIds());
+		verify(playlistDownloadRepository, never()).save(any());
+		verify(playlistDownloadRepository, never()).countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any());
+	}
+
+	@Test
+	void offlineRequestStillRejectsSongWhoseDownloadFlagIsFalse() {
+		Playlist playlist = playlist(10L, owner);
+		Song song = downloadableSong(44L, "Reko/Gasy Tsara.mp3");
+		song.setIsDownloadable(false);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist))
+				.thenReturn(List.of(playlistSong(playlist, song, 0)));
+
+		NondownloadableSongsException exception = assertThrows(NondownloadableSongsException.class,
+				() -> service.requestOfflineDownload(OWNER_EMAIL, 10L));
+
+		assertEquals(List.of(44L), exception.getSongIds());
+		verify(storageService, never()).getPresignedUrl(any(), anyInt(), any());
+		verify(playlistDownloadRepository, never()).save(any());
+	}
+
+	@Test
+	void publicCleartextAudioUrlIsRejectedForOfflineDownload() {
+		Playlist playlist = playlist(10L, owner);
+		PlaylistSong link = playlistSong(
+				playlist, downloadableSong(43L, "http://cdn.example/audio.mp3"), 1);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist)).thenReturn(List.of(link));
+
+		NondownloadableSongsException exception = assertThrows(NondownloadableSongsException.class,
+				() -> service.requestOfflineDownload(OWNER_EMAIL, 10L));
+
+		assertEquals(List.of(43L), exception.getSongIds());
+		verify(playlistDownloadRepository, never()).save(any());
+	}
+
+	@Test
+	void offlineQuotaReturnsTooManyRequests() {
+		Playlist playlist = playlist(10L, owner);
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist)).thenReturn(List.of());
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.empty());
+		when(playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(owner)).thenReturn(List.of());
+		when(playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any()))
+				.thenReturn(10L);
+
+		ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+				() -> service.requestOfflineDownload(OWNER_EMAIL, 10L));
+
+		assertEquals(HttpStatus.TOO_MANY_REQUESTS, exception.getStatusCode());
+		verify(playlistDownloadRepository, never()).save(any());
+	}
+
+	@Test
+	void activeOfflineRequestIsIdempotentAndExpiredEntriesAreReactivatedWithinQuota() {
+		Playlist playlist = playlist(10L, owner);
+		PlaylistDownload existing = offlineRecord(owner, playlist, true, LocalDateTime.now().plusDays(5));
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist)).thenReturn(List.of());
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.of(existing));
+
+		service.requestOfflineDownload(OWNER_EMAIL, 10L);
+
+		verify(playlistDownloadRepository, never()).countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any());
+		verify(playlistDownloadRepository, never()).save(any());
+	}
+
+	@Test
+	void offlineListingReportsExpiredAsInactiveAndDeleteSoftDeactivates() {
+		Playlist playlist = playlist(10L, owner);
+		PlaylistDownload expired = offlineRecord(owner, playlist, true,
+				LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1));
+		when(playlistDownloadRepository.findByUseridUsers(owner)).thenReturn(List.of(expired));
+		when(playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(owner)).thenReturn(List.of(expired));
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.of(expired));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist)).thenReturn(List.of());
+
+		var listed = service.listOfflineDownloads(OWNER_EMAIL);
+		assertEquals(false, listed.get(0).active());
+		assertEquals(10L, listed.get(0).playlistId());
+		verify(playlistDownloadRepository).saveAll(List.of(expired));
+
+		service.deleteOfflineDownload(OWNER_EMAIL, 10L);
+		assertEquals(false, expired.getIsActive());
+		verify(playlistDownloadRepository).save(expired);
+	}
+
+	@Test
+	void refreshRenewsExpiryAndReactivatesAnExpiredDownload() {
+		Playlist playlist = playlist(10L, owner);
+		PlaylistDownload expired = offlineRecord(owner, playlist, true, LocalDateTime.now().minusDays(1));
+		when(playlistRepository.findById(10L)).thenReturn(Optional.of(playlist));
+		when(playlistDownloadRepository.findByUseridUsersAndPlaylistidPlaylists(owner, playlist))
+				.thenReturn(Optional.of(expired));
+		when(playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(owner)).thenReturn(List.of(expired));
+		when(playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(any(), any()))
+				.thenReturn(0L);
+		when(playlistDownloadRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist)).thenReturn(List.of());
+
+		var response = service.refreshOfflineDownload(OWNER_EMAIL, 10L);
+
+		assertEquals(true, response.active());
+		assertEquals(true, expired.getExpiresAt().isAfter(LocalDateTime.now(ZoneOffset.UTC).plusDays(29)));
+		assertEquals(true, expired.getIsActive());
+	}
+
+	private static Song downloadableSong(Long id, String audioUrl) {
+		Song song = song(id);
+		song.setTitle("Song " + id);
+		song.setIsDownloadable(true);
+		song.setAudioUrl(audioUrl);
+		return song;
+	}
+
+	private static PlaylistDownload offlineRecord(
+			User user, Playlist playlist, boolean active, LocalDateTime expiresAt) {
+		PlaylistDownload download = new PlaylistDownload();
+		download.setUseridUsers(user);
+		download.setPlaylistidPlaylists(playlist);
+		download.setDownloadedAt(LocalDateTime.now().minusDays(2));
+		download.setExpiresAt(expiresAt);
+		download.setIsActive(active);
+		return download;
 	}
 
 	private static Playlist playlist(Long id, User owner) {

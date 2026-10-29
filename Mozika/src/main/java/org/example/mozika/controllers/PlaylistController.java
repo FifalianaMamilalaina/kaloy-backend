@@ -45,6 +45,7 @@ import org.example.mozika.dto.playlist.AddSongsToPlaylistRequest;
 import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
 import org.example.mozika.dto.playlist.PlaylistVisibilityRequest;
+import org.example.mozika.dto.playlist.OfflinePlaylistDownloadResponse;
 import org.example.mozika.dto.playlist.PublicPlaylistPageResponse;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
@@ -703,6 +704,52 @@ try {
 		playlistMobileService.downloadPlaylist(userDetails.getUsername(), id);
 		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
 				HttpStatus.OK, "Playlist marked for offline use", null));
+	}
+
+	@Operation(summary = "Request or resume encrypted offline playlist download")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/{id}/download-request")
+	public ResponseEntity<RestResponse<OfflinePlaylistDownloadResponse>> requestOfflineDownload(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		OfflinePlaylistDownloadResponse download =
+				playlistMobileService.requestOfflineDownload(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline playlist download ready", download));
+	}
+
+	@Operation(summary = "List this user's offline playlist downloads")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/offline")
+	public ResponseEntity<RestResponse<List<OfflinePlaylistDownloadResponse>>> listOfflineDownloads(
+			@AuthenticationPrincipal UserDetails userDetails) {
+		List<OfflinePlaylistDownloadResponse> downloads =
+				playlistMobileService.listOfflineDownloads(userDetails.getUsername());
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline downloads retrieved successfully", downloads));
+	}
+
+	@Operation(summary = "Deactivate an offline playlist download")
+	@SecurityRequirement(name = "bearerAuth")
+	@DeleteMapping("/offline/{playlistId}")
+	public ResponseEntity<RestResponse<Void>> deleteOfflineDownload(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long playlistId) {
+		playlistMobileService.deleteOfflineDownload(userDetails.getUsername(), playlistId);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline download deactivated", null));
+	}
+
+	@Operation(summary = "Refresh an offline playlist download")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/offline/{playlistId}/refresh")
+	public ResponseEntity<RestResponse<OfflinePlaylistDownloadResponse>> refreshOfflineDownload(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long playlistId) {
+		OfflinePlaylistDownloadResponse download =
+				playlistMobileService.refreshOfflineDownload(userDetails.getUsername(), playlistId);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline download refreshed", download));
 	}
 
 	@Operation(summary = "Get one of my playlists", description = "Returns the details of an owned playlist by ID.")

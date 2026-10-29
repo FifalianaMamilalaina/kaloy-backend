@@ -14,7 +14,9 @@ public interface PlaylistDownloadRepository
 
 	List<PlaylistDownload> findByUseridUsersAndIsActiveTrue(User user);
 
+	List<PlaylistDownload> findByUseridUsers(User user);
+
 	Optional<PlaylistDownload> findByUseridUsersAndPlaylistidPlaylists(User user, Playlist playlist);
 
-	long countByUseridUsersAndIsActiveTrue(User user);
+	long countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(User user, java.time.LocalDateTime now);
 }

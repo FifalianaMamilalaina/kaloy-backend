@@ -4,12 +4,15 @@ import org.example.mozika.dto.playlist.AddSongsResult;
 import org.example.mozika.dto.playlist.AddSongsToPlaylistRequest;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.example.mozika.dto.playlist.OfflinePlaylistDownloadResponse;
+import org.example.mozika.dto.playlist.OfflineSongDownloadResponse;
 import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
 import org.example.mozika.dto.playlist.PublicPlaylistPageResponse;
 import org.example.mozika.dto.playlist.ReorderSongItem;
 import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
 import org.example.mozika.exception.ResourceNotFoundException;
+import org.example.mozika.exception.NondownloadableSongsException;
 import org.example.mozika.models.*;
 import org.example.mozika.repositories.*;
 import org.example.mozika.services.interfaces.PlaylistMobileService;
@@ -19,8 +22,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,6 +47,10 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 	private final UsersInfosRepository usersInfosRepository;
 	private final ArtistRepository artistRepository;
 	private final StorageService storageService;
+	@Value("${server.servlet.context-path:}")
+	private String contextPath = "";
+	@Value("${app.media-base-url:}")
+	private String mediaBaseUrl = "";
 
 	public DefaultPlaylistMobileService(
 			PlaylistRepository playlistRepository,
@@ -294,31 +307,259 @@ public class DefaultPlaylistMobileService implements PlaylistMobileService {
 	@Override
 	@Transactional
 	public void downloadPlaylist(String email, Long playlistId) {
+		requestOfflineDownload(email, playlistId);
+	}
+
+	@Override
+	@Transactional
+	public OfflinePlaylistDownloadResponse requestOfflineDownload(String email, Long playlistId) {
 		User user = userRepository.findByEmail(email)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
-
 		Playlist playlist = playlistRepository.findById(playlistId)
 				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
-		if (!isOwner(email, playlist) && !isPublic(playlist)) {
-			throw new ResourceNotFoundException("Playlist not found: " + playlistId);
-		}
-
-		long count = playlistDownloadRepository.countByUseridUsersAndIsActiveTrue(user);
-		if (count >= 10) {
-			throw new IllegalStateException("Limite de 10 téléchargements atteinte");
-		}
-
+		assertPlaylistDownloadAccess(email, playlist);
+		LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+		List<PlaylistSong> playlistSongs = playlistSongRepository
+				.findByPlaylistidPlaylistsOrderByPositionAsc(playlist);
+		validateDownloadableSongs(playlistSongs);
 		PlaylistDownload download = playlistDownloadRepository
 				.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
 				.orElse(new PlaylistDownload());
 
+		if (Boolean.TRUE.equals(download.getIsActive()) && download.getExpiresAt() != null
+				&& download.getExpiresAt().isAfter(now)) {
+			return toOfflineDownloadResponse(download, playlistSongs, true);
+		}
+		deactivateExpiredDownloads(user, now);
+		if (playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(user, now) >= 10) {
+			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+					"Maximum of 10 active offline playlists reached");
+		}
+
 		download.setUseridUsers(user);
 		download.setPlaylistidPlaylists(playlist);
-		download.setDownloadedAt(LocalDateTime.now());
-		download.setExpiresAt(LocalDateTime.now().plusDays(30));
+		download.setDownloadedAt(now);
+		download.setExpiresAt(now.plusDays(30));
 		download.setIsActive(true);
+		PlaylistDownload saved = playlistDownloadRepository.save(download);
+		return toOfflineDownloadResponse(saved, playlistSongs, true);
+	}
 
+	@Override
+	@Transactional
+	public List<OfflinePlaylistDownloadResponse> listOfflineDownloads(String email) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+		deactivateExpiredDownloads(user, now);
+		return playlistDownloadRepository.findByUseridUsers(user).stream()
+				.map(download -> {
+					boolean active = Boolean.TRUE.equals(download.getIsActive())
+							&& download.getExpiresAt() != null && download.getExpiresAt().isAfter(now);
+					List<PlaylistSong> songs = playlistSongRepository
+							.findByPlaylistidPlaylistsOrderByPositionAsc(download.getPlaylistidPlaylists());
+					return toOfflineDownloadResponse(download, songs, active);
+				})
+				.toList();
+	}
+
+	@Override
+	@Transactional
+	public void deleteOfflineDownload(String email, Long playlistId) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		PlaylistDownload download = playlistDownloadRepository
+				.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
+				.orElseThrow(() -> new ResourceNotFoundException("Offline download not found: " + playlistId));
+		download.setIsActive(false);
 		playlistDownloadRepository.save(download);
+	}
+
+	@Override
+	@Transactional
+	public OfflinePlaylistDownloadResponse refreshOfflineDownload(String email, Long playlistId) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Playlist playlist = playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+		assertPlaylistDownloadAccess(email, playlist);
+		PlaylistDownload download = playlistDownloadRepository
+				.findByUseridUsersAndPlaylistidPlaylists(user, playlist)
+				.orElseThrow(() -> new ResourceNotFoundException("Offline download not found: " + playlistId));
+		List<PlaylistSong> songs = playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(playlist);
+		validateDownloadableSongs(songs);
+		LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+		deactivateExpiredDownloads(user, now);
+		if (!Boolean.TRUE.equals(download.getIsActive()) || download.getExpiresAt() == null
+				|| !download.getExpiresAt().isAfter(now)) {
+			download.setIsActive(false);
+		}
+		if (!Boolean.TRUE.equals(download.getIsActive())
+				&& playlistDownloadRepository.countByUseridUsersAndIsActiveTrueAndExpiresAtAfter(user, now) >= 10) {
+			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+					"Maximum of 10 active offline playlists reached");
+		}
+		download.setDownloadedAt(now);
+		download.setExpiresAt(now.plusDays(30));
+		download.setIsActive(true);
+		PlaylistDownload saved = playlistDownloadRepository.save(download);
+		return toOfflineDownloadResponse(saved, songs, true);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public void authorizeOfflineSongDownload(String email, Long songId) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+		Song song = songRepository.findById(songId)
+				.orElseThrow(() -> new ResourceNotFoundException("Song not found: " + songId));
+		if (!Boolean.TRUE.equals(song.getIsDownloadable())) {
+			throw new ResourceNotFoundException("Song is no longer downloadable: " + songId);
+		}
+		LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+		boolean authorized = playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(user).stream()
+				.filter(download -> download.getExpiresAt().isAfter(now))
+				.anyMatch(download -> playlistSongRepository.findByPlaylistidPlaylistsOrderByPositionAsc(
+						download.getPlaylistidPlaylists()).stream()
+						.anyMatch(item -> Objects.equals(item.getSongidSongs().getId(), song.getId())));
+		if (!authorized) {
+			throw new ResourceNotFoundException("No active offline download contains song: " + songId);
+		}
+	}
+
+	private void assertPlaylistDownloadAccess(String email, Playlist playlist) {
+		if (!isOwner(email, playlist) && !isPublic(playlist)) {
+			throw new ResourceNotFoundException("Playlist not found: " + playlist.getId());
+		}
+	}
+
+	private void validateDownloadableSongs(List<PlaylistSong> playlistSongs) {
+		List<Long> nondownloadableIds = playlistSongs.stream()
+				.map(PlaylistSong::getSongidSongs)
+				.filter(song -> !Boolean.TRUE.equals(song.getIsDownloadable())
+						|| song.getAudioUrl() == null || song.getAudioUrl().isBlank()
+						|| !isSupportedOfflineSource(song.getAudioUrl()))
+				.map(Song::getId)
+				.toList();
+		if (!nondownloadableIds.isEmpty()) {
+			throw new NondownloadableSongsException(nondownloadableIds);
+		}
+	}
+
+	private void deactivateExpiredDownloads(User user, LocalDateTime now) {
+		List<PlaylistDownload> expired = playlistDownloadRepository.findByUseridUsersAndIsActiveTrue(user).stream()
+				.filter(download -> download.getExpiresAt() == null || !download.getExpiresAt().isAfter(now))
+				.peek(download -> download.setIsActive(false))
+				.toList();
+		if (!expired.isEmpty()) {
+			playlistDownloadRepository.saveAll(expired);
+			playlistDownloadRepository.flush();
+		}
+	}
+
+	private OfflinePlaylistDownloadResponse toOfflineDownloadResponse(
+			PlaylistDownload download, List<PlaylistSong> playlistSongs, boolean active) {
+		List<OfflineSongDownloadResponse> songs = playlistSongs.stream()
+				.map(item -> {
+					Song song = item.getSongidSongs();
+					String artist = song.getArtistidArtists() == null
+							? "" : song.getArtistidArtists().getStageName();
+					String url = active && Boolean.TRUE.equals(song.getIsDownloadable())
+							&& song.getAudioUrl() != null && !song.getAudioUrl().isBlank()
+							? offlineDownloadUrl(song) : null;
+					return new OfflineSongDownloadResponse(
+							song.getId(), song.getTitle(), artist, song.getDurationSeconds(),
+							item.getPosition(), url);
+				})
+				.toList();
+		Playlist playlist = download.getPlaylistidPlaylists();
+		return new OfflinePlaylistDownloadResponse(
+				playlist.getId(), playlist.getName(), download.getDownloadedAt(),
+				download.getExpiresAt(), active, songs);
+	}
+
+	private String offlineDownloadUrl(Song song) {
+		String source = song.getAudioUrl();
+		if (source.startsWith("/uploads/") || isAbsoluteUploadUrl(source)) {
+			return contextPath + "/media/songs/" + song.getId() + "/offline-download";
+		}
+		if (isAbsoluteHttpUrl(source)) {
+			return source;
+		}
+		return storageService.getPresignedUrl(source, 24, TimeUnit.HOURS);
+	}
+
+	private boolean isSupportedOfflineSource(String source) {
+		if (source.startsWith("/uploads/")) {
+			return true;
+		}
+		if (!source.matches("^[A-Za-z][A-Za-z0-9+.-]*:.*")) {
+			// Relative values are MinIO object keys; spaces and Unicode are valid in keys.
+			return true;
+		}
+		try {
+			URI uri = URI.create(source);
+			if (!isAbsoluteHttpUrl(uri)) {
+				return false;
+			}
+			return "https".equalsIgnoreCase(uri.getScheme()) || isPrivateHost(uri.getHost());
+		} catch (IllegalArgumentException ignored) {
+			return false;
+		}
+	}
+
+	private boolean isPrivateHost(String host) {
+		if (host == null || host.equalsIgnoreCase("localhost")) {
+			return true;
+		}
+		String[] parts = host.split("\\.");
+		if (parts.length != 4) {
+			return false;
+		}
+		int[] octets = new int[4];
+		try {
+			for (int index = 0; index < parts.length; index++) {
+				octets[index] = Integer.parseInt(parts[index]);
+				if (octets[index] < 0 || octets[index] > 255) {
+					return false;
+				}
+			}
+		} catch (NumberFormatException exception) {
+			return false;
+		}
+		return octets[0] == 10
+				|| (octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31)
+				|| (octets[0] == 192 && octets[1] == 168)
+				|| (octets[0] == 169 && octets[1] == 254)
+				|| octets[0] == 127;
+	}
+
+	private boolean isAbsoluteHttpUrl(String source) {
+		try {
+			return isAbsoluteHttpUrl(URI.create(source));
+		} catch (IllegalArgumentException ignored) {
+			return false;
+		}
+	}
+
+	private boolean isAbsoluteHttpUrl(URI uri) {
+		return ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+				&& uri.getHost() != null && uri.getUserInfo() == null;
+	}
+
+	private boolean isAbsoluteUploadUrl(String source) {
+		try {
+			URI sourceUri = URI.create(source);
+			URI backendUri = URI.create(mediaBaseUrl);
+			return isAbsoluteHttpUrl(sourceUri) && sourceUri.getPath() != null
+					&& sourceUri.getPath().contains("/uploads/")
+					&& Objects.equals(sourceUri.getScheme(), backendUri.getScheme())
+					&& Objects.equals(sourceUri.getAuthority(), backendUri.getAuthority());
+		} catch (IllegalArgumentException ignored) {
+			return false;
+		}
 	}
 
 	@Override

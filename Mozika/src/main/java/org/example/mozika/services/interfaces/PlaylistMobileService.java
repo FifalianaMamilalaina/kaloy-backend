@@ -4,6 +4,7 @@ import org.example.mozika.dto.playlist.AddSongsResult;
 import org.example.mozika.dto.playlist.AddSongsToPlaylistRequest;
 import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
 import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.example.mozika.dto.playlist.OfflinePlaylistDownloadResponse;
 import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
 import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
 import org.example.mozika.dto.playlist.PublicPlaylistPageResponse;
@@ -39,6 +40,16 @@ public interface PlaylistMobileService {
 	Playlist mergePlaylist(String email, MergePlaylistsMobileRequest request);
 
 	void downloadPlaylist(String email, Long playlistId);
+
+	OfflinePlaylistDownloadResponse requestOfflineDownload(String email, Long playlistId);
+
+	List<OfflinePlaylistDownloadResponse> listOfflineDownloads(String email);
+
+	void deleteOfflineDownload(String email, Long playlistId);
+
+	OfflinePlaylistDownloadResponse refreshOfflineDownload(String email, Long playlistId);
+
+	void authorizeOfflineSongDownload(String email, Long songId);
 
 	List<PlaylistSongMobileResponse> getSongsInPlaylist(String email, Long playlistId);
 

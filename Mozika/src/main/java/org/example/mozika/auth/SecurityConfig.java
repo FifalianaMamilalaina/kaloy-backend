@@ -66,6 +66,7 @@ public class SecurityConfig {
                                 "/playlists/me", "/playlists/me/**",
                                 "/playlists/public", "/playlists/public/**",
                                 "/playlists/merge", "/playlists/*/download",
+                                "/playlists/*/download-request", "/playlists/offline", "/playlists/offline/**",
                                 "/playlists/*/visibility")
                         .authenticated()
                         // Legacy generic playlist endpoints do not enforce owner/visibility checks.
