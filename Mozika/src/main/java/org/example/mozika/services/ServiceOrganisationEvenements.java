@@ -47,6 +47,7 @@ public class ServiceOrganisationEvenements {
     private final EventModerationStatuseRepository statutModerationRepository;
     private final ServiceArtisteConnecte serviceArtisteConnecte;
     private final ServiceLieux serviceLieux;
+    private final ServiceNotifications serviceNotifications;
 
     public ServiceOrganisationEvenements(EventRepository evenementRepository,
                                          ConcertRepository concertRepository,
@@ -54,7 +55,8 @@ public class ServiceOrganisationEvenements {
                                          ParticipationStatuseRepository statutParticipationRepository,
                                          EventModerationStatuseRepository statutModerationRepository,
                                          ServiceArtisteConnecte serviceArtisteConnecte,
-                                         ServiceLieux serviceLieux) {
+                                         ServiceLieux serviceLieux,
+                                         ServiceNotifications serviceNotifications) {
         this.evenementRepository = evenementRepository;
         this.concertRepository = concertRepository;
         this.artisteRepository = artisteRepository;
@@ -62,6 +64,7 @@ public class ServiceOrganisationEvenements {
         this.statutModerationRepository = statutModerationRepository;
         this.serviceArtisteConnecte = serviceArtisteConnecte;
         this.serviceLieux = serviceLieux;
+        this.serviceNotifications = serviceNotifications;
     }
 
     /** Evenements organises par l'artiste connecte, du plus proche au plus lointain. */
@@ -116,7 +119,7 @@ public class ServiceOrganisationEvenements {
         Event enregistre = evenementRepository.save(evenement);
 
         for (CreneauRequest creneau : requete.getCreneaux()) {
-            concertRepository.save(construireCreneau(enregistre, organisateur, creneau));
+            enregistrerCreneau(enregistre, organisateur, creneau);
         }
         return enregistre;
     }
@@ -134,12 +137,51 @@ public class ServiceOrganisationEvenements {
         Artist organisateur = evenement.getCreatedbyartistidArtists();
 
         return creneaux.stream()
-                .map(creneau -> concertRepository.save(
-                        construireCreneau(evenement, organisateur, creneau)))
+                .map(creneau -> enregistrerCreneau(evenement, organisateur, creneau))
                 .toList();
     }
 
     // ── Construction d'un creneau ────────────────────────────────────────────
+
+    /**
+     * Enregistre un creneau et previent l'artiste si c'en est une invitation.
+     *
+     * Les deux appelants — creer et ajouterCreneaux — passent par ici plutot
+     * que d'appeler save directement : la notification doit partir dans les
+     * deux cas, et une regle ecrite a deux endroits finit par diverger.
+     */
+    private Concert enregistrerCreneau(Event evenement, Artist organisateur,
+                                       CreneauRequest requete) {
+        Concert concert = concertRepository.save(
+                construireCreneau(evenement, organisateur, requete));
+        notifierSiInvitation(concert, organisateur);
+        return concert;
+    }
+
+    /**
+     * Previent l'artiste invite, sauf quand l'organisateur se programme
+     * lui-meme : son creneau est CONFIRMED d'emblee, et une notification
+     * n'aurait rien a lui apprendre.
+     *
+     * Appele apres save, et non dans construireCreneau : la notification
+     * porte l'identifiant du concert, qui n'existe pas avant l'insertion.
+     */
+    private void notifierSiInvitation(Concert concert, Artist organisateur) {
+        Artist invite = concert.getArtistidArtists();
+        if (invite.getId().equals(organisateur.getId())) {
+            return;
+        }
+        Event evenement = concert.getEventidEvents();
+        serviceNotifications.creer(
+                invite.getUseridUsers(),
+                "CONCERT_INVITATION",
+                ServiceNotifications.libelleInvitation(
+                        concert.getTitle(),
+                        evenement == null ? null : evenement.getName(),
+                        concert.getStartTime()),
+                "CONCERT",
+                concert.getId());
+    }
 
     private Concert construireCreneau(Event evenement, Artist organisateur, CreneauRequest requete) {
         Artist artiste = artisteRepository.findById(requete.getIdArtiste())

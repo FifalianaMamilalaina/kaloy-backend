@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import org.example.mozika.models.Artist;
 import org.example.mozika.models.Album;
+import org.example.mozika.dto.ChansonEcouteeResponse;
+import org.springframework.data.domain.Pageable;
 
 
 
@@ -67,4 +69,33 @@ List<Song> trouverClassement(@Param("depuis") java.time.LocalDateTime depuis,
                              @Param("idGenre") Long idGenre,
                              @Param("limite") int limite);
 
+
+long countByArtistidArtists(Artist artistidArtists);
+
+/**
+ * Chansons d'un artiste avec leur nombre d'ecoutes, les plus ecoutees
+ * d'abord.
+ *
+ * Distincte de trouverLesPlusEcoutees, qui donne le meme ordre mais pas
+ * le compte : l'ecran affiche « Samy Mandeha  36 », il a donc besoin du
+ * nombre et pas seulement du classement.
+ *
+ * LEFT JOIN : une chanson jamais ecoutee doit apparaitre, a zero, en fin
+ * de liste. Un INNER JOIN la ferait disparaitre, et l'artiste croirait
+ * l'avoir perdue.
+ *
+ * JPQL et non requete native, contrairement a sa voisine, parce que
+ * l'expression « SELECT new » construit directement le DTO. En natif il
+ * faudrait depaqueter des Object[] par position.
+ */
+@Query("""
+    SELECT new org.example.mozika.dto.ChansonEcouteeResponse(s.id, s.title, COUNT(lh.id))
+    FROM Song s
+    LEFT JOIN ListeningHistory lh ON lh.songidSongs = s
+    WHERE s.artistidArtists = :artiste
+    GROUP BY s.id, s.title
+    ORDER BY COUNT(lh.id) DESC, s.id DESC
+    """)
+List<ChansonEcouteeResponse> compterEcoutesParChanson(@Param("artiste") Artist artiste,
+                                                     Pageable pageable);
 }

@@ -56,6 +56,19 @@ kaloy:
     # serait fige en base au moment de l'envoi. L'application le prefixe avec
     # sa propre adresse de base.
     url-publique: /uploads
+    # Envoi par morceaux, pour les videos. Une video de 5 minutes pese 300 a
+    # 500 Mo : elle ne tient ni dans la memoire du telephone, ni dans une
+    # seule requete. Decoupee, chaque requete reste minuscule et la limite
+    # multipart de 200 Mo n est jamais approchee.
+    morceaux:
+      # 2 Mo : quelques secondes par morceau sur reseau mobile, donc peu
+      # perdu a chaque coupure, et 250 requetes pour 500 Mo.
+      taille: 2097152
+      # 2 Go. Refuse a l ouverture de la session, pas apres 40 minutes.
+      taille-max-totale: 2147483648
+      # Au-dela, une session abandonnee est purgee : sinon ses morceaux
+      # restent sur le disque pour toujours.
+      duree-vie-heures: 24
 
 
 
@@ -82,11 +95,8 @@ app:
   jwt:
     secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9ya2Fsb3liYWNrZW5kYXV0aHNlY3JldA==
     expiration-ms: 86400000
-
-minio:
-  endpoint: http://${adresse_ip}:9000
-  public-url: http://${adresse_ip}:9000
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket: kaloy-media
-  presigned-url-expiry-days: 7
+  firebase:
+    # Cle de compte de service, hors depot (voir .gitignore). Absente, l envoi
+    # reel est desactive et EnvoiPushInactif prend le relais : le serveur
+    # demarre quand meme, sur un poste qui n a pas la cle.
+    fichier-cle: ${user.dir}/firebase-service-account.json
