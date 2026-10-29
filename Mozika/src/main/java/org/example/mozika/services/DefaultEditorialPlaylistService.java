@@ -31,6 +31,11 @@ public class DefaultEditorialPlaylistService implements EditorialPlaylistService
 	}  
 
 	@Override
+	public List<EditorialPlaylist> getFeaturedEditorials() {
+		return editorialPlaylistRepository.findByIsFeaturedTrue();
+	}
+
+	@Override
 	public Page<EditorialPlaylist> getAllEditorialPlaylist(Pageable pageable) {
 	    try {
 	        return editorialPlaylistRepository.findAll(pageable);

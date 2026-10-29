@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface PlaylistVisibilitieRepository extends JpaRepository<PlaylistVisibilitie, Long>, JpaSpecificationExecutor<PlaylistVisibilitie> {
 
+	java.util.Optional<PlaylistVisibilitie> findByName(String name);
+
 }

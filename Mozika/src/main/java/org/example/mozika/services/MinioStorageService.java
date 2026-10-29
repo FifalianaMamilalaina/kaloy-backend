@@ -38,8 +38,16 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public String getPresignedUrl(String objectName) {
+        return getPresignedUrl(objectName, expiryDays, TimeUnit.DAYS);
+    }
+
+    @Override
+    public String getPresignedUrl(String objectName, int expiry, TimeUnit unit) {
         if (objectName == null || objectName.isBlank()) {
             return null;
+        }
+        if (expiry <= 0 || unit == null) {
+            throw new IllegalArgumentException("A positive presigned URL expiry is required");
         }
         try {
             String url = minioClient.getPresignedObjectUrl(
@@ -47,7 +55,7 @@ public class MinioStorageService implements StorageService {
                             .bucket(bucket)
                             .object(objectName)
                             .method(Method.GET)
-                            .expiry(expiryDays, TimeUnit.DAYS)
+                            .expiry(expiry, unit)
                             .build());
             log.debug("URL média générée pour l'objet MinIO: {}", objectName);
             return url;

@@ -42,6 +42,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Old association endpoints return private playlist entities without visibility filtering.
+                        .requestMatchers("/users/*/playlists", "/songs/*/playlistsongs").denyAll()
                         .requestMatchers(
                                 "/auth/**",
                                 "/swagger-ui/**",
@@ -59,6 +61,18 @@ public class SecurityConfig {
                         // par le composant d'affichage, qui ne porte pas le jeton.
                         // L'envoi (POST /uploads) reste protege.
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        // Keep the mobile playlist API and the public-playlist read API.
+                        .requestMatchers(
+                                "/playlists/me", "/playlists/me/**",
+                                "/playlists/public", "/playlists/public/**",
+                                "/playlists/merge", "/playlists/*/download",
+                                "/playlists/*/download-request", "/playlists/offline", "/playlists/offline/**",
+                                "/playlists/*/visibility")
+                        .authenticated()
+                        // Legacy generic playlist endpoints do not enforce owner/visibility checks.
+                        .requestMatchers("/playlists", "/playlists/**",
+                                "/playlistsongs", "/playlistsongs/**")
+                        .denyAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
