@@ -69,6 +69,8 @@ public class SecurityConfig {
                                 "/playlists/*/download-request", "/playlists/offline", "/playlists/offline/**",
                                 "/playlists/*/visibility")
                         .authenticated()
+                        // Module Favoris : endpoints utilisateur
+                        .requestMatchers("/favoris/me", "/favoris/me/**").authenticated()
                         // Legacy generic playlist endpoints do not enforce owner/visibility checks.
                         .requestMatchers("/playlists", "/playlists/**",
                                 "/playlistsongs", "/playlistsongs/**")
