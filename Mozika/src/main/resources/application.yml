@@ -47,6 +47,16 @@ mapi:
   password: "hZ7Z8zrP:4.!9Rj"
   sender-id: KALOY
 
+
+minio:
+  endpoint: http://${adresse_ip}:9000
+  public-url: http://${adresse_ip}:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: kaloy
+  presigned-url-expiry-days: 7
+
+
 kaloy:
   uploads:
     # Dossier ou sont ecrits les fichiers envoyes, et adresse publique servant
