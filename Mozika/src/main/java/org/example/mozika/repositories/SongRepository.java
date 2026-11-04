@@ -73,6 +73,33 @@ List<Song> trouverClassement(@Param("depuis") java.time.LocalDateTime depuis,
 long countByArtistidArtists(Artist artistidArtists);
 
 /**
+ * Les auteurs-compositeurs deja saisis, sur tout le catalogue.
+ *
+ * Sur tout le catalogue et non sur les seules chansons de l'artiste : la
+ * liste doit servir a un artiste qui n'a encore rien declare, pour qui une
+ * restriction a ses propres chansons donnerait une liste vide.
+ *
+ * La colonne est du texte libre, il n'existe pas de table de reference. La
+ * liste n'est donc pas une contrainte, seulement une aide a la saisie : le
+ * formulaire permet aussi d'entrer un nom nouveau, sans quoi musical_arranger
+ * — nul sur toutes les chansons au 03/11/2026 — resterait vide a jamais.
+ */
+@Query("""
+    SELECT DISTINCT TRIM(s.authorComposer) FROM Song s
+    WHERE s.authorComposer IS NOT NULL AND TRIM(s.authorComposer) <> ''
+    ORDER BY TRIM(s.authorComposer)
+    """)
+List<String> listerAuteursCompositeurs();
+
+/** Les arrangeurs deja saisis. Meme principe que les auteurs-compositeurs. */
+@Query("""
+    SELECT DISTINCT TRIM(s.musicalArranger) FROM Song s
+    WHERE s.musicalArranger IS NOT NULL AND TRIM(s.musicalArranger) <> ''
+    ORDER BY TRIM(s.musicalArranger)
+    """)
+List<String> listerArrangeurs();
+
+/**
  * Chansons d'un artiste avec leur nombre d'ecoutes, les plus ecoutees
  * d'abord.
  *
