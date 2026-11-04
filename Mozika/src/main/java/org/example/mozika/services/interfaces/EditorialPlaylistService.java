@@ -23,6 +23,7 @@ public interface EditorialPlaylistService {
     EditorialPlaylist updateEditorialPlaylist(Long id, EditorialPlaylist editorialPlaylist);
 
     void deleteEditorialPlaylist(Long id);
-    
+
+    List<EditorialPlaylist> getFeaturedEditorials();
 
 }

@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/musical_app
     username: postgres
-    password: Fifaliana!
+    password: 3198
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -39,17 +39,6 @@ spring:
             enable: true
             required: true
 
-# MinioConfig exige ces proprietes pour demarrer. Aucun serveur MinIO ne tourne
-# ici : les valeurs permettent de construire le bean sans se connecter. Les
-# envois depuis l'application passent par le stockage disque ci-dessous.
-minio:
-  endpoint: http://localhost:9000
-  public-url: http://${adresse_ip}:9000
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket: kaloy
-  presigned-url-expiry-days: 7
-
 # Valeurs reprises de kaloy-backend-main, le backend qui demarrait : elles
 # manquaient ici et empechaient le demarrage (app.jwt.secret introuvable).
 mapi:
@@ -57,6 +46,16 @@ mapi:
   username: kaloy123
   password: "hZ7Z8zrP:4.!9Rj"
   sender-id: KALOY
+
+
+minio:
+  endpoint: http://${adresse_ip}:9000
+  public-url: http://${adresse_ip}:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: kaloy
+  presigned-url-expiry-days: 7
+
 
 kaloy:
   uploads:
@@ -95,9 +94,6 @@ logging:
     org.mozika: DEBUG              
     org.hibernate.SQL: DEBUG       
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-
-
-
 
 
 

@@ -4,9 +4,12 @@ import io.minio.GetObjectResponse;
 import io.minio.StatObjectResponse;
 
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 
 public interface StorageService {
     String getPresignedUrl(String objectName);
+
+    String getPresignedUrl(String objectName, int expiry, TimeUnit unit);
 
     GetObjectResponse getObject(String objectName);
 

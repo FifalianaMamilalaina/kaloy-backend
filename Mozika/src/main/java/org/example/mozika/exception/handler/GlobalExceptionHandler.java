@@ -3,6 +3,7 @@ package org.example.mozika.exception.handler;
 import lombok.extern.slf4j.Slf4j;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.InternalServerErrorException;
+import org.example.mozika.exception.NondownloadableSongsException;
 import org.example.mozika.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -78,9 +79,31 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(response);
     }
 
+    @ExceptionHandler(NondownloadableSongsException.class)
+    public ResponseEntity<RestResponse<java.util.List<Long>>> handleNondownloadableSongs(
+            NondownloadableSongsException ex) {
+        RestResponse<java.util.List<Long>> response = RestResponse.buildErrorResponse(
+                HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getSongIds());
+        return ResponseEntity.badRequest().body(response);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<RestResponse<Void>> handleDataIntegrityViolationException(
             DataIntegrityViolationException ex) {
+        String detail = ex.getMostSpecificCause() == null ? ex.getMessage()
+                : ex.getMostSpecificCause().getMessage();
+        if (detail != null) {
+            String normalized = detail.toLowerCase();
+            boolean downloadQuotaFailure = normalized.contains("playlist_downloads")
+                    && (normalized.contains("quota") || normalized.contains("limit")
+                            || normalized.contains("maximum"));
+            if (downloadQuotaFailure || normalized.contains("maximum active offline")
+                    || normalized.contains("offline download limit")) {
+                RestResponse<Void> response = RestResponse.buildErrorResponse(
+                        HttpStatus.TOO_MANY_REQUESTS, "Maximum of 10 active offline playlists reached", null);
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+            }
+        }
         String message = resolveDuplicateFieldMessage(ex);
         RestResponse<Void> response = RestResponse.buildErrorResponse(HttpStatus.CONFLICT, message, null);
         log.error("Database constraint violation: {}", ex.getMessage(), ex);

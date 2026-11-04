@@ -314,6 +314,21 @@ public class EditorialPlaylistController  {
 		}
 	}
 
+	@Operation(summary = "Get featured editorial playlists",
+	    description = "Returns all editorial playlists marked as featured (is_featured = true). Public endpoint.")
+	@ApiResponses({
+	    @ApiResponse(responseCode = "200", description = "Featured playlists retrieved successfully")
+	})
+	@GetMapping("/featured")
+	public ResponseEntity<RestResponse<List<EditorialPlaylist>>> getFeaturedEditorialPlaylists() {
+		List<EditorialPlaylist> featured = editorialplaylistService.getFeaturedEditorials();
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+			HttpStatus.OK,
+			"Featured editorial playlists retrieved successfully",
+			featured
+		));
+	}
+
 
 
 }
