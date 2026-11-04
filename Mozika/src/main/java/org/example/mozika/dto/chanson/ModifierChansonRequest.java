@@ -31,6 +31,13 @@ public class ModifierChansonRequest {
     private String urlAudio;
     private String urlVideo;
 
+    /** Chemins rendus par l'envoi de fichier, comme urlAudio. */
+    @Size(max = 255)
+    private String urlKaraoke;
+
+    @Size(max = 255)
+    private String urlPlayback;
+
     @Size(max = 255)
     private String auteurCompositeur;
 
@@ -70,6 +77,12 @@ public class ModifierChansonRequest {
 
     public String getUrlVideo() { return urlVideo; }
     public void setUrlVideo(String urlVideo) { this.urlVideo = urlVideo; }
+
+    public String getUrlKaraoke() { return urlKaraoke; }
+    public void setUrlKaraoke(String urlKaraoke) { this.urlKaraoke = urlKaraoke; }
+
+    public String getUrlPlayback() { return urlPlayback; }
+    public void setUrlPlayback(String urlPlayback) { this.urlPlayback = urlPlayback; }
 
     public String getAuteurCompositeur() { return auteurCompositeur; }
     public void setAuteurCompositeur(String auteurCompositeur) { this.auteurCompositeur = auteurCompositeur; }

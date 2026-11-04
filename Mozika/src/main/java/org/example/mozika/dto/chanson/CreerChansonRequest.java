@@ -64,6 +64,24 @@ public class CreerChansonRequest {
     @Size(max = 255, message = "L'adresse video ne peut pas depasser 255 caracteres")
     private String urlVideo;
 
+    /**
+     * Le karaoke et le playback, memes regles que l'audio.
+     *
+     * Des chemins rendus par l'envoi de fichier, chacun dans sa propre
+     * colonne varchar(255) : karaoke_audio_url et playback_url. Les
+     * colonnes karaoke_audio et playback, en BYTEA, sont le dessin
+     * d'origine -- le fichier dans la base -- et restent inutilisees.
+     *
+     * Aucune regle ne les lie a l'audio : une chanson peut n'avoir qu'un
+     * karaoke, et c'est un cas reel pour un choeur qui repete sans
+     * enregistrement du chant.
+     */
+    @Size(max = 255, message = "L'adresse du karaoke ne peut pas depasser 255 caracteres")
+    private String urlKaraoke;
+
+    @Size(max = 255, message = "L'adresse du playback ne peut pas depasser 255 caracteres")
+    private String urlPlayback;
+
     @Size(max = 255)
     private String auteurCompositeur;
 
@@ -148,6 +166,22 @@ public class CreerChansonRequest {
 
     public void setUrlVideo(String urlVideo) {
         this.urlVideo = urlVideo;
+    }
+
+    public String getUrlKaraoke() {
+        return urlKaraoke;
+    }
+
+    public void setUrlKaraoke(String urlKaraoke) {
+        this.urlKaraoke = urlKaraoke;
+    }
+
+    public String getUrlPlayback() {
+        return urlPlayback;
+    }
+
+    public void setUrlPlayback(String urlPlayback) {
+        this.urlPlayback = urlPlayback;
     }
 
     public String getAuteurCompositeur() {
