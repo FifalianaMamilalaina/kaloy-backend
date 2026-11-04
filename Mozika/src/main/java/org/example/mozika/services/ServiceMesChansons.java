@@ -108,6 +108,8 @@ public class ServiceMesChansons {
         chanson.setSolfa(normaliser(requete.getSolfa()));
         chanson.setAudioUrl(normaliser(requete.getUrlAudio()));
         chanson.setVideoUrl(normaliser(requete.getUrlVideo()));
+        chanson.setKaraokeAudioUrl(normaliser(requete.getUrlKaraoke()));
+        chanson.setPlaybackUrl(normaliser(requete.getUrlPlayback()));
         chanson.setAuthorComposer(normaliser(requete.getAuteurCompositeur()));
         chanson.setMusicalArranger(normaliser(requete.getArrangeur()));
         chanson.setDurationSeconds(requete.getDureeSecondes());
@@ -153,6 +155,12 @@ public class ServiceMesChansons {
         if (requete.getLangue() != null) chanson.setLanguage(langue(requete.getLangue()));
         if (requete.getUrlAudio() != null) chanson.setAudioUrl(normaliser(requete.getUrlAudio()));
         if (requete.getUrlVideo() != null) chanson.setVideoUrl(normaliser(requete.getUrlVideo()));
+        if (requete.getUrlKaraoke() != null) {
+            chanson.setKaraokeAudioUrl(normaliser(requete.getUrlKaraoke()));
+        }
+        if (requete.getUrlPlayback() != null) {
+            chanson.setPlaybackUrl(normaliser(requete.getUrlPlayback()));
+        }
         if (requete.getAuteurCompositeur() != null) {
             chanson.setAuthorComposer(normaliser(requete.getAuteurCompositeur()));
         }
@@ -175,8 +183,13 @@ public class ServiceMesChansons {
 
         // La regle de creation reste vraie apres modification : on ne doit pas
         // pouvoir vider une chanson de tout contenu en deux appels.
+        //
+        // Le karaoke et le playback comptent comme contenu : une chanson qui
+        // n'a plus que son karaoke n'est pas vide, et refuser la suppression
+        // des paroles dans ce cas serait arbitraire.
         if (vide(chanson.getLyrics()) && vide(chanson.getSolfa())
-                && vide(chanson.getAudioUrl()) && vide(chanson.getVideoUrl())) {
+                && vide(chanson.getAudioUrl()) && vide(chanson.getVideoUrl())
+                && vide(chanson.getKaraokeAudioUrl()) && vide(chanson.getPlaybackUrl())) {
             throw new IllegalArgumentException(
                     "Une chanson doit garder au moins des paroles, un solfa ou un media");
         }

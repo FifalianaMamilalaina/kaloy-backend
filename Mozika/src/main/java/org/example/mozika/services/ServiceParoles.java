@@ -26,6 +26,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Recherche de paroles sur tononkira.serasera.org.
@@ -63,6 +65,40 @@ public class ServiceParoles {
             "Kaloy/1.0 (application musicale; contact: rabezandrinasoary@gmail.com)";
 
     private static final int MAX_CANDIDATS = 15;
+
+    /**
+     * Le site se defend de la copie en piegeant ses propres pages.
+     *
+     * Il insere des mots au hasard dans les paroles, puis un JavaScript
+     * les enveloppe dans des span en display:none apres chargement :
+     *
+     *     const trapWords = ["gvxyhoq","qqmkkjes","tononkira.serasera.org"];
+     *     const contentDiv = document.getElementById("6ae38de62feea");
+     *
+     * Dans un navigateur le texte parait donc propre, mais nous lisons le
+     * HTML avant que ce script ne tourne, et nous recuperions les pieges
+     * melanges aux vers. Mesure sur une chanson relevee en base : quatre
+     * mots parasites dans dix-sept vers.
+     *
+     * Les mots changent a CHAQUE requete sur la meme page -- verifie : deux
+     * lectures de la meme adresse ont donne deux jeux differents. Aucune
+     * liste figee ne pouvait donc marcher ; on lit celle que la page
+     * declare.
+     */
+    private static final Pattern MOTIF_PIEGES =
+            Pattern.compile("trapWords\\s*=\\s*\\[(.*?)]", Pattern.DOTALL);
+
+    private static final Pattern MOTIF_MOT = Pattern.compile("\"([^\"]+)\"");
+
+    /**
+     * L'identifiant du bloc de paroles, que le meme script designe.
+     *
+     * getElementById apparait plusieurs fois dans la page, pour le bouton
+     * de copie du lien entre autres : on ne cherche donc qu'APRES la liste
+     * des pieges, ou le premier rencontre est celui des paroles.
+     */
+    private static final Pattern MOTIF_BLOC =
+            Pattern.compile("getElementById\\(\\s*\"([^\"]+)\"\\s*\\)");
 
     /**
      * Petit cache des pages deja lues.
@@ -136,7 +172,89 @@ public class ServiceParoles {
     }
 
     /**
-     * Le bloc de paroles : l'element qui porte le plus de <br> en ENFANTS DIRECTS.
+     * Le texte des paroles, debarrasse des mots pieges du site.
+     *
+     * Le bloc est vise par l'identifiant que la page declare elle-meme, et
+     * l'heuristique du bloc le plus dense ne sert plus qu'en secours. Le
+     * commentaire precedent affirmait ici que ce <div> a identifiant genere
+     * etait « impossible a viser par un selecteur » : c'etait faux. Il est
+     * genere, mais la page le nomme, dans le script meme qui masque les
+     * pieges. Il suffisait de lire ce script au lieu de deviner.
+     */
+    private String extraireTexte(Document page) {
+        Masquage masquage = masquage(page);
+
+        // L'identifiant declare passe avant l'heuristique : il vient du site
+        // lui-meme, alors que « le bloc le plus dense » est une devinette.
+        Element bloc = masquage.idBloc().isEmpty()
+                ? null
+                : page.getElementById(masquage.idBloc());
+
+        if (bloc == null) {
+            bloc = blocLePlusDense(page);
+        }
+        if (bloc == null) {
+            return "";
+        }
+        return retirerPieges(enTexte(bloc), masquage.mots());
+    }
+
+    /**
+     * Ce que la page declare de son propre masquage : les mots pieges, et
+     * l'identifiant du bloc qu'ils polluent.
+     */
+    private record Masquage(List<String> mots, String idBloc) {
+        static final Masquage AUCUN = new Masquage(List.of(), "");
+    }
+
+    private Masquage masquage(Document page) {
+        for (Element script : page.select("script")) {
+            String code = script.data();
+            Matcher pieges = MOTIF_PIEGES.matcher(code);
+            if (!pieges.find()) {
+                continue;
+            }
+            List<String> mots = new ArrayList<>();
+            Matcher mot = MOTIF_MOT.matcher(pieges.group(1));
+            while (mot.find()) {
+                mots.add(mot.group(1));
+            }
+            Matcher bloc = MOTIF_BLOC.matcher(code);
+            String id = bloc.find(pieges.end()) ? bloc.group(1) : "";
+            return new Masquage(mots, id);
+        }
+        // Le site a peut-etre change son masquage : on continue sans, plutot
+        // que de ne plus rien rendre. L'heuristique reprend la main.
+        journal.debug("Aucune liste de mots pieges trouvee dans la page");
+        return Masquage.AUCUN;
+    }
+
+    /**
+     * Enleve les mots pieges du texte, comme le fait le script du site.
+     *
+     * Les limites de mot evitent d'amputer un vers qui contiendrait la meme
+     * suite de lettres. Pattern.quote est necessaire pour
+     * « tononkira.serasera.org », dont les points seraient sinon des jokers --
+     * et dont le motif du site, lui, ne les echappe pas.
+     */
+    private String retirerPieges(String texte, List<String> mots) {
+        String resultat = texte;
+        for (String mot : mots) {
+            resultat = resultat.replaceAll("\\b" + Pattern.quote(mot) + "\\b", "");
+        }
+        // Un mot retire laisse deux espaces la ou le navigateur n'en montrait
+        // qu'un, puisque HTML replie les blancs.
+        resultat = resultat.replaceAll("[ \\t]{2,}", " ");
+        resultat = resultat.replaceAll("(?m)[ \\t]+$", "");
+        return resultat;
+    }
+
+    /**
+     * Le bloc le plus dense en <br>, en secours si la page ne declare rien.
+     *
+     * On ne compte que les <br> ENFANTS DIRECTS : autrement chaque conteneur
+     * parent heriterait du total de son contenu et c'est le <body> qui
+     * gagnerait.
      *
      * Deux fausses pistes avant celle-ci, qui expliquent le detour.
      *
@@ -152,13 +270,8 @@ public class ServiceParoles {
      * formulaire et boutons. Jsoup, qui respecte la norme, ferme le paragraphe
      * des qu'il rencontre un <div> — un <p> ne peut pas en contenir. Les vrais
      * paragraphes n'avaient alors presque plus de sauts.
-     *
-     * Le texte vit en fait dans un <div> a identifiant genere, donc impossible
-     * a viser par un selecteur. On ne compte que les <br> ENFANTS DIRECTS :
-     * autrement chaque conteneur parent heriterait du total de son contenu et
-     * c'est le <body> qui gagnerait.
      */
-    private String extraireTexte(Document page) {
+    private Element blocLePlusDense(Document page) {
         Element zone = page.selectFirst("#main");
 
         Element meilleur = null;
@@ -177,10 +290,7 @@ public class ServiceParoles {
         }
 
         // Un bloc de navigation ou de mention legale n'a pas de sauts.
-        if (meilleur == null || maxSauts < 4) {
-            return "";
-        }
-        return enTexte(meilleur);
+        return maxSauts < 4 ? null : meilleur;
     }
 
     /**
