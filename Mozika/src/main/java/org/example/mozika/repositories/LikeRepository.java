@@ -21,6 +21,8 @@ List<Like> findByUseridUsersAndTargettypeidInteractionTargets(
 Optional<Like> findByUseridUsersAndTargettypeidInteractionTargetsAndTargetId(
         User user, InteractionTarget targetType, Long targetId);
 
+long countByUseridUsers(User user);
 
+long countByUseridUsersAndTargettypeidInteractionTargets(User user, InteractionTarget targetType);
 
 }

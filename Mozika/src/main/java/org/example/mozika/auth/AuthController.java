@@ -64,4 +64,22 @@ public class AuthController {
         return ResponseEntity.ok(
                 RestResponse.buildSuccessResponse(HttpStatus.OK, "Connexion réussie", result));
     }
+
+    @Operation(summary = "Renouveler la session avec un jeton de renouvellement à usage unique")
+    @PostMapping("/refresh")
+    public ResponseEntity<RestResponse<AuthResponse>> refresh(
+            @RequestBody @Valid RefreshRequest request) {
+        AuthResponse result = authService.refresh(request.getRefreshToken());
+        return ResponseEntity.ok(
+                RestResponse.buildSuccessResponse(HttpStatus.OK, "Session renouvelée.", result));
+    }
+
+    @Operation(summary = "Révoquer la session de cet appareil")
+    @PostMapping("/logout")
+    public ResponseEntity<RestResponse<Void>> logout(
+            @RequestBody @Valid RefreshRequest request) {
+        authService.revokeRefreshToken(request.getRefreshToken());
+        return ResponseEntity.ok(
+                RestResponse.buildSuccessResponse(HttpStatus.OK, "Déconnexion réussie.", null));
+    }
 }

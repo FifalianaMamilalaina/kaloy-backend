@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.example.mozika.models.Follow;
+import org.example.mozika.models.dto.FollowArtisteResponse;
 import org.example.mozika.models.dto.FollowSearch;
 import org.springframework.web.bind.annotation.*;
 import org.example.mozika.services.interfaces.FollowService;
@@ -40,6 +41,16 @@ public class FollowController  {
 
 	public FollowController(FollowService followService) {
 	   this.followService = followService;
+	}
+
+	@Operation(summary = "Liste des artistes suivis", description = "Retourne les artistes suivis par l'utilisateur authentifié.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me")
+	public ResponseEntity<RestResponse<List<FollowArtisteResponse>>> getMesFollows(
+	    @AuthenticationPrincipal UserDetails userDetails
+	) {
+	    List<FollowArtisteResponse> data = followService.getMesFollows(userDetails.getUsername());
+	    return ResponseEntity.ok(RestResponse.buildSuccessResponse(HttpStatus.OK, "Artistes suivis.", data));
 	}
 
 	@Operation(summary = "Nombre d'artistes suivis", description = "Retourne le nombre d'artistes suivis par l'utilisateur authentifié.")

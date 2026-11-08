@@ -3,6 +3,7 @@ package org.example.mozika.services.interfaces;
 import org.example.mozika.models.dto.FavorisAlbumResponse;
 import org.example.mozika.models.dto.FavorisArtisteResponse;
 import org.example.mozika.models.dto.FavorisSongResponse;
+import org.example.mozika.models.dto.StatsFavorisResponse;
 
 import java.util.List;
 
@@ -37,4 +38,8 @@ public interface FavorisService {
     void retirerArtisteDesFavoris(String email, Long artistId);
 
     boolean estFavoriArtiste(String email, Long artistId);
+
+    long countMesFavoris(String email);
+
+    StatsFavorisResponse getStatsFavoris(String email);
 }
