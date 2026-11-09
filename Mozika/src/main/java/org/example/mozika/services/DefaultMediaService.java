@@ -56,6 +56,9 @@ public class DefaultMediaService implements MediaService {
         dto.setIsDownloadable(song.getIsDownloadable());
         dto.setLyrics(song.getLyrics());
         dto.setLyricsSyncData(song.getLyricsSyncData());
+        // Le solfa en texte, a cote des paroles. setSolfa et non setSolfaUrl :
+        // cette derniere attend un fichier, et reste vide tant qu'il n'y en a pas.
+        dto.setSolfa(song.getSolfa());
         dto.setAuthorComposer(song.getAuthorComposer());
         dto.setMusicalArranger(song.getMusicalArranger());
 
