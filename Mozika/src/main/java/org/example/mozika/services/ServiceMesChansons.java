@@ -1,5 +1,6 @@
 package org.example.mozika.services;
 
+import org.example.mozika.dto.chanson.ChansonAModifierResponse;
 import org.example.mozika.dto.chanson.CreerChansonRequest;
 import org.example.mozika.dto.chanson.ModifierChansonRequest;
 import org.example.mozika.dto.chanson.OptionsChansonResponse;
@@ -95,6 +96,46 @@ public class ServiceMesChansons {
     }
 
     @Transactional
+    /**
+     * L'etat d'une chanson tel que le formulaire de modification le
+     * pre-remplit.
+     *
+     * Un appel a part, et non la liste : GET /mes-chansons renvoie des
+     * entites Song, et Song NE PORTE PAS ses genres -- ils vivent dans
+     * song_genres, sans relation declaree. Le formulaire se serait ouvert
+     * en affichant « aucun genre », puis l'enregistrement aurait envoye une
+     * liste vide, et remplacerGenres() efface TOUS les liens avant de
+     * reinserer. Chaque modification aurait donc supprime les genres sans
+     * la moindre erreur : une perte silencieuse.
+     *
+     * maChanson() verifie au passage que la chanson appartient bien a
+     * l'artiste connecte, comme pour la modification et la suppression.
+     */
+    public ChansonAModifierResponse chansonAModifier(String emailConnecte, Long idChanson) {
+        Song chanson = maChanson(emailConnecte, idChanson);
+
+        List<Long> idsGenres = songGenreRepository.findBySongidSongs(chanson).stream()
+                .map(lien -> lien.getGenreidGenres().getId())
+                .toList();
+
+        return new ChansonAModifierResponse(
+                chanson.getId(),
+                chanson.getTitle(),
+                chanson.getLyrics(),
+                chanson.getSolfa(),
+                chanson.getLanguage(),
+                chanson.getAudioUrl(),
+                chanson.getVideoUrl(),
+                chanson.getKaraokeAudioUrl(),
+                chanson.getPlaybackUrl(),
+                chanson.getAuthorComposer(),
+                chanson.getMusicalArranger(),
+                chanson.getDurationSeconds(),
+                chanson.getReleaseDate(),
+                chanson.getAlbumidAlbums() == null ? null : chanson.getAlbumidAlbums().getId(),
+                idsGenres);
+    }
+
     public Song creer(String emailConnecte, CreerChansonRequest requete) {
         Artist artiste = serviceArtisteConnecte.resoudre(emailConnecte);
 
@@ -167,10 +208,25 @@ public class ServiceMesChansons {
         if (requete.getArrangeur() != null) {
             chanson.setMusicalArranger(normaliser(requete.getArrangeur()));
         }
-        if (requete.getDureeSecondes() != null) chanson.setDurationSeconds(requete.getDureeSecondes());
-        if (requete.getDateSortie() != null) chanson.setReleaseDate(requete.getDateSortie());
+        // Les trois champs non textuels. L'effacement l'emporte sur la
+        // valeur : sans ces branches, l'album, la date et la duree pouvaient
+        // etre poses mais jamais retires, faute de « chaine vide » pour dire
+        // « enleve-le ». Un album choisi par erreur restait pour toujours.
+        if (Boolean.TRUE.equals(requete.getEffacerDuree())) {
+            chanson.setDurationSeconds(null);
+        } else if (requete.getDureeSecondes() != null) {
+            chanson.setDurationSeconds(requete.getDureeSecondes());
+        }
 
-        if (requete.getIdAlbum() != null) {
+        if (Boolean.TRUE.equals(requete.getEffacerDateSortie())) {
+            chanson.setReleaseDate(null);
+        } else if (requete.getDateSortie() != null) {
+            chanson.setReleaseDate(requete.getDateSortie());
+        }
+
+        if (Boolean.TRUE.equals(requete.getEffacerAlbum())) {
+            chanson.setAlbumidAlbums(null);
+        } else if (requete.getIdAlbum() != null) {
             chanson.setAlbumidAlbums(monAlbum(chanson.getArtistidArtists(), requete.getIdAlbum()));
         }
         // Le type suit l'audio dans tous les cas : si l'artiste ajoute un
