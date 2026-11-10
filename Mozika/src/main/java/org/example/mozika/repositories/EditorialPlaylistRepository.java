@@ -13,6 +13,8 @@ public interface EditorialPlaylistRepository extends JpaRepository<EditorialPlay
 
 List<EditorialPlaylist> findByArtistidArtists(Artist artistidArtists);
 
+List<EditorialPlaylist> findByIsFeaturedTrue();
+
 
 
 }

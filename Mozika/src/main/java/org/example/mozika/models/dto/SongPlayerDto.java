@@ -18,6 +18,21 @@ public class SongPlayerDto {
     private Boolean isDownloadable;
     private String lyrics;
     private String lyricsSyncData;
+
+    /**
+     * Le solfa, en TEXTE.
+     *
+     * A ne pas confondre avec solfaUrl plus bas, qui est reservee a un envoi
+     * de fichier qui n'existe pas encore. Le solfa saisi par l'artiste est du
+     * texte et vit dans la colonne solfa -- voir l'annexe 1.16, ou il partait
+     * dans solfa_url, un varchar(255), et aurait fait echouer l'insertion au
+     * premier usage reel.
+     *
+     * Le champ manquait ici, donc le solfa n'atteignait jamais le mobile : la
+     * fiche de chanson proposait un onglet Solfa qui ouvrait solfaUrl comme un
+     * lien, c'est-a-dire rien.
+     */
+    private String solfa;
     private String authorComposer;
     private String musicalArranger;
 

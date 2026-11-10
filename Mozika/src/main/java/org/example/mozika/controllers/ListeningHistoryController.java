@@ -180,7 +180,6 @@ public class ListeningHistoryController  {
 	
 	    if(!listeninghistorys.hasContent()) {
 	            message = "No listening history found";
-	            throw new ResourceNotFoundException(message);
 	    }
 	
 	    RestResponse<Page<ListeningHistory>> response = RestResponse.buildSuccessResponse(
@@ -230,7 +229,6 @@ public class ListeningHistoryController  {
 	
 	    if(!listeninghistorys.hasContent()) {
 	            message = "No listening history found";
-	            throw new ResourceNotFoundException(message);
 	    }
 	
 	    RestResponse<Page<ListeningHistory>> response = RestResponse.buildSuccessResponse(

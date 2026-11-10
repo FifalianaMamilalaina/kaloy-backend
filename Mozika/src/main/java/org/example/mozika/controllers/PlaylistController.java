@@ -39,21 +39,43 @@ import java.util.HashMap;
 import org.example.mozika.dto.RestResponse;
 import org.example.mozika.exception.ResourceNotFoundException;
 import java.util.List;
+import org.example.mozika.services.interfaces.PlaylistMobileService;
+import org.example.mozika.dto.playlist.AddSongsResult;
+import org.example.mozika.dto.playlist.AddSongsToPlaylistRequest;
+import org.example.mozika.dto.playlist.PlaylistSongMobileResponse;
+import org.example.mozika.dto.playlist.PlaylistUiItemResponse;
+import org.example.mozika.dto.playlist.PlaylistVisibilityRequest;
+import org.example.mozika.dto.playlist.OfflinePlaylistDownloadResponse;
+import org.example.mozika.dto.playlist.PublicPlaylistPageResponse;
+import org.example.mozika.dto.playlist.CreatePlaylistMobileRequest;
+import org.example.mozika.dto.playlist.MergePlaylistsMobileRequest;
+import org.example.mozika.dto.playlist.ReorderSongItem;
+import org.example.mozika.dto.playlist.UpdatePlaylistMobileRequest;
+import org.example.mozika.dto.playlist.PlaylistGenerationRequest;
+import org.example.mozika.dto.playlist.PlaylistGenerationProposalResponse;
+import org.example.mozika.dto.playlist.SaveGeneratedPlaylistRequest;
+import org.example.mozika.services.PlaylistGenerationService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/playlists")
 @Tag(name = "Playlist", description = "Playlist Management APIs")
 public class PlaylistController  {
 	private final PlaylistService playlistService;
-private final DownloadService downloadService;
-private final PlaylistSongService playlistsongService;
+	private final DownloadService downloadService;
+	private final PlaylistSongService playlistsongService;
+	private final PlaylistMobileService playlistMobileService;
+	private final PlaylistGenerationService playlistGenerationService;
 
-
-	public PlaylistController(PlaylistService playlistService, DownloadService downloadService, PlaylistSongService playlistsongService) {
-	   this.playlistService = playlistService;
-	this.downloadService = downloadService;
-	this.playlistsongService = playlistsongService;
-	
+	public PlaylistController(PlaylistService playlistService, DownloadService downloadService,
+			PlaylistSongService playlistsongService, PlaylistMobileService playlistMobileService,
+			PlaylistGenerationService playlistGenerationService) {
+		this.playlistService = playlistService;
+		this.downloadService = downloadService;
+		this.playlistsongService = playlistsongService;
+		this.playlistMobileService = playlistMobileService;
+		this.playlistGenerationService = playlistGenerationService;
 	}
 
 	@Operation(
@@ -563,5 +585,252 @@ try {
 }
 }
 
+	// ─── Mobile endpoints ────────────────────────────────────────────────────
+
+	@Operation(summary = "Get my playlists", description = "Returns all playlists owned by the authenticated user.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me")
+	public ResponseEntity<RestResponse<List<PlaylistUiItemResponse>>> getMesPlaylists(
+			@AuthenticationPrincipal UserDetails userDetails) {
+		List<PlaylistUiItemResponse> playlists = playlistMobileService.getMesPlaylists(userDetails.getUsername());
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlists retrieved successfully", playlists));
+	}
+
+	@Operation(summary = "Discover public playlists", description = "Searches playlists shared with all authenticated users.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/public")
+	public ResponseEntity<RestResponse<PublicPlaylistPageResponse>> discoverPublicPlaylists(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) String search,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size) {
+		if (page < 0 || size < 1 || size > 50) {
+			return ResponseEntity.badRequest().body(RestResponse.buildErrorResponse(
+					HttpStatus.BAD_REQUEST, "Page must be non-negative and size must be between 1 and 50", null));
+		}
+		PublicPlaylistPageResponse playlists = playlistMobileService.discoverPublicPlaylists(
+				userDetails.getUsername(), search, page, size);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Public playlists retrieved successfully", playlists));
+	}
+
+	@Operation(summary = "Get a public playlist")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/public/{id}")
+	public ResponseEntity<RestResponse<PlaylistUiItemResponse>> getPublicPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		PlaylistUiItemResponse playlist = playlistMobileService.getPublicPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Public playlist retrieved successfully", playlist));
+	}
+
+	@Operation(summary = "List songs from a public playlist")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/public/{id}/songs")
+	public ResponseEntity<RestResponse<List<PlaylistSongMobileResponse>>> getPublicPlaylistSongs(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		List<PlaylistSongMobileResponse> songs =
+				playlistMobileService.getPublicPlaylistSongs(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Public playlist songs retrieved successfully", songs));
+	}
+
+	@Operation(summary = "Change playlist visibility", description = "Only the owner can make a playlist public or private.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PutMapping("/{id}/visibility")
+	public ResponseEntity<RestResponse<PlaylistUiItemResponse>> changePlaylistVisibility(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody @Valid PlaylistVisibilityRequest request) {
+		PlaylistUiItemResponse playlist = playlistMobileService.changeVisibility(
+				userDetails.getUsername(), id, request.getVisibility());
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist visibility updated successfully", playlist));
+	}
+
+	@Operation(summary = "Create a playlist (mobile)", description = "Creates a new private playlist for the authenticated user.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me")
+	public ResponseEntity<RestResponse<Playlist>> createPlaylistMobile(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid CreatePlaylistMobileRequest request) {
+		Playlist created = playlistMobileService.createPlaylist(userDetails.getUsername(), request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Playlist created successfully", created));
+	}
+
+	@Operation(summary = "Generate playlist proposals from listening criteria")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me/generate")
+	public ResponseEntity<RestResponse<List<PlaylistGenerationProposalResponse>>> generatePlaylists(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid PlaylistGenerationRequest request) {
+		List<PlaylistGenerationProposalResponse> proposals = playlistGenerationService.generate(request);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist proposals generated successfully", proposals));
+	}
+
+	@Operation(summary = "Save a generated playlist proposal")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me/generated")
+	public ResponseEntity<RestResponse<Playlist>> saveGeneratedPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid SaveGeneratedPlaylistRequest request) {
+		Playlist playlist = playlistGenerationService.save(userDetails.getUsername(), request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Generated playlist saved successfully", playlist));
+	}
+
+	@Operation(summary = "Merge playlists", description = "Merges 2 or more owned playlists into a new one.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/merge")
+	public ResponseEntity<RestResponse<Playlist>> mergePlaylists(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody @Valid MergePlaylistsMobileRequest request) {
+		Playlist merged = playlistMobileService.mergePlaylist(userDetails.getUsername(), request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Playlists merged successfully", merged));
+	}
+
+	@Operation(summary = "Download playlist for offline", description = "Marks a playlist as downloaded (max 10 active, 30-day expiry).")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/{id}/download")
+	public ResponseEntity<RestResponse<Void>> downloadPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		playlistMobileService.downloadPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist marked for offline use", null));
+	}
+
+	@Operation(summary = "Request or resume encrypted offline playlist download")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/{id}/download-request")
+	public ResponseEntity<RestResponse<OfflinePlaylistDownloadResponse>> requestOfflineDownload(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		OfflinePlaylistDownloadResponse download =
+				playlistMobileService.requestOfflineDownload(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline playlist download ready", download));
+	}
+
+	@Operation(summary = "List this user's offline playlist downloads")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/offline")
+	public ResponseEntity<RestResponse<List<OfflinePlaylistDownloadResponse>>> listOfflineDownloads(
+			@AuthenticationPrincipal UserDetails userDetails) {
+		List<OfflinePlaylistDownloadResponse> downloads =
+				playlistMobileService.listOfflineDownloads(userDetails.getUsername());
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline downloads retrieved successfully", downloads));
+	}
+
+	@Operation(summary = "Deactivate an offline playlist download")
+	@SecurityRequirement(name = "bearerAuth")
+	@DeleteMapping("/offline/{playlistId}")
+	public ResponseEntity<RestResponse<Void>> deleteOfflineDownload(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long playlistId) {
+		playlistMobileService.deleteOfflineDownload(userDetails.getUsername(), playlistId);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline download deactivated", null));
+	}
+
+	@Operation(summary = "Refresh an offline playlist download")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/offline/{playlistId}/refresh")
+	public ResponseEntity<RestResponse<OfflinePlaylistDownloadResponse>> refreshOfflineDownload(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long playlistId) {
+		OfflinePlaylistDownloadResponse download =
+				playlistMobileService.refreshOfflineDownload(userDetails.getUsername(), playlistId);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Offline download refreshed", download));
+	}
+
+	@Operation(summary = "Get one of my playlists", description = "Returns the details of an owned playlist by ID.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me/{id}")
+	public ResponseEntity<RestResponse<PlaylistUiItemResponse>> getMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		PlaylistUiItemResponse playlist = playlistMobileService.getPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist retrieved successfully", playlist));
+	}
+
+	@Operation(summary = "Update one of my playlists", description = "Updates the name and description of an owned playlist.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PutMapping("/me/{id}")
+	public ResponseEntity<RestResponse<Playlist>> updateMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody @Valid UpdatePlaylistMobileRequest request) {
+		Playlist updated = playlistMobileService.updatePlaylist(userDetails.getUsername(), id, request);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist updated successfully", updated));
+	}
+
+	@Operation(summary = "Delete one of my playlists", description = "Deletes an owned playlist (with ownership check).")
+	@SecurityRequirement(name = "bearerAuth")
+	@DeleteMapping("/me/{id}")
+	public ResponseEntity<RestResponse<Void>> deleteMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		playlistMobileService.deletePlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Playlist deleted successfully", null));
+	}
+
+	@Operation(summary = "List songs in my playlist", description = "Returns songs ordered by position for an owned playlist.")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me/{id}/songs")
+	public ResponseEntity<RestResponse<List<PlaylistSongMobileResponse>>> getSongsInMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		List<PlaylistSongMobileResponse> songs = playlistMobileService.getSongsInPlaylist(userDetails.getUsername(), id);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Songs retrieved successfully", songs));
+	}
+
+	@Operation(summary = "Add songs to my playlist", description = "Adds one or more songs to an owned playlist. Returns lists of added, already-present, and not-found IDs.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/me/{id}/songs")
+	public ResponseEntity<RestResponse<AddSongsResult>> addSongsToMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody @Valid AddSongsToPlaylistRequest request) {
+		AddSongsResult result = playlistMobileService.addSongsToPlaylist(userDetails.getUsername(), id, request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(RestResponse.buildSuccessResponse(
+				HttpStatus.CREATED, "Songs added successfully", result));
+	}
+
+	@Operation(summary = "Remove a song from my playlist", description = "Removes a song from an owned playlist and renormalizes positions.")
+	@SecurityRequirement(name = "bearerAuth")
+	@DeleteMapping("/me/{id}/songs/{songId}")
+	public ResponseEntity<RestResponse<Void>> removeSongFromMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@PathVariable Long songId) {
+		playlistMobileService.removeSongFromPlaylist(userDetails.getUsername(), id, songId);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Song removed from playlist", null));
+	}
+
+	@Operation(summary = "Reorder songs in my playlist", description = "Reorders songs in an owned playlist. Must include all songs with new positions.")
+	@SecurityRequirement(name = "bearerAuth")
+	@PutMapping("/me/{id}/songs/reorder")
+	public ResponseEntity<RestResponse<Void>> reorderSongsInMyPlaylist(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestBody List<ReorderSongItem> items) {
+		playlistMobileService.reorderSongs(userDetails.getUsername(), id, items);
+		return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+				HttpStatus.OK, "Songs reordered successfully", null));
+	}
 
 }
