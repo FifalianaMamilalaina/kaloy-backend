@@ -45,12 +45,17 @@ public class Song  {
 	private String recordingLocation;
 	@Column(name="recording_date", unique = false, nullable = true)
 	private java.time.LocalDate recordingDate;
+	// Pas de @NotNull : une chanson peut etre declaree avec seulement des
+	// paroles ou un solfa, donc sans aucun fichier audio. La colonne a ete
+	// rendue nullable en base le 30/10/2026 pour la meme raison.
 	@ManyToOne
 	@JoinColumn(name="storage_type_id")
-	@NotNull(message = "StorageTypeId cannot be null")
 	private AudioStorageType storagetypeidAudioStorageTypes;
-	@Column(name="audio_url", unique = false, nullable = false)
-	@NotNull(message = "AudioUrl cannot be null")
+	// nullable et sans @NotNull : meme raison que le type de stockage. Une
+	// chanson declaree sur ses seules paroles n'a aucune URL audio a fournir.
+	// La colonne est nullable en base depuis l'origine ; seule l'annotation
+	// l'interdisait.
+	@Column(name="audio_url", unique = false, nullable = true)
 	@Size(max = 2147483647)
 	private String audioUrl;
 	@Column(name="video_url", unique = false, nullable = true)
@@ -59,7 +64,11 @@ public class Song  {
 	@Column(name="karaoke_audio_url", unique = false, nullable = true)
 	@Size(max = 2147483647)
 	private String karaokeAudioUrl;
-	@Column(name="lyrics", unique = false, nullable = true)
+	// columnDefinition explicite : sans elle Hibernate a cree un
+	// varchar(255) malgre le @Size ci-dessous, et les paroles reprises du
+	// site font 1500 caracteres et plus. Une insertion trop longue est
+	// refusee par PostgreSQL, elle n'est pas tronquee.
+	@Column(name="lyrics", unique = false, nullable = true, columnDefinition = "TEXT")
 	@Size(max = 2147483647)
 	private String lyrics;
 	@Column(name="lyrics_sync_data", unique = false, nullable = true)
@@ -68,6 +77,14 @@ public class Song  {
 	@Column(name="solfa_url", unique = false, nullable = true)
 	@Size(max = 2147483647)
 	private String solfaUrl;
+	// La colonne solfa est en TEXT en base mais n'etait pas mappee : le
+	// solfa saisi partait dans solfa_url, un varchar(255). Un solfa fait
+	// plusieurs lignes, l'insertion aurait echoue au premier usage reel,
+	// exactement comme les paroles (annexe § 1.15). solfa_url reste reservee
+	// a un envoi de fichier, qui n'est pas encore fait.
+	@Column(name="solfa", unique = false, nullable = true, columnDefinition = "TEXT")
+	@Size(max = 2147483647)
+	private String solfa;
 	@Column(name="playback_url", unique = false, nullable = true)
 	@Size(max = 2147483647)
 	private String playbackUrl;

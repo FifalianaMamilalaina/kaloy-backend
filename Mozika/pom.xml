@@ -76,6 +76,14 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/x
             <version>1.11.0</version>
         </dependency>
 
+        <!-- Analyse HTML des pages de paroles. Un analyseur tolerant est
+             necessaire : les pages reelles ne sont pas du XML valide. -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.1</version>
+        </dependency>
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>

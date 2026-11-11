@@ -19,7 +19,8 @@ public final class FormatsAutorises {
 
     /**
      * Une seule extension par type. Images pour les pochettes et la galerie ;
-     * audio, video et PDF pour le pipeline d'ingestion (Sprint 8-9).
+     * audio pour les chansons declarees par les artistes et pour le pipeline
+     * d'ingestion (Sprint 8-9) ; video et PDF pour le pipeline.
      */
     private static final Map<String, String> EXTENSIONS = Map.ofEntries(
             Map.entry("image/jpeg", ".jpg"),
@@ -27,12 +28,20 @@ public final class FormatsAutorises {
             Map.entry("image/webp", ".webp"),
             Map.entry("audio/mpeg", ".mp3"),
             Map.entry("audio/mp3", ".mp3"),
+            // M4A : ce que les telephones produisent et stockent le plus
+            // souvent. Les deux types coexistent selon la plateforme —
+            // Android annonce audio/mp4, iOS audio/x-m4a. L'absence de ces
+            // deux lignes faisait refuser au dernier appel, apres l'envoi,
+            // un fichier que l'artiste venait de choisir ; et la seule
+            // chanson du catalogue qui porte un audio est un .m4a.
+            Map.entry("audio/mp4", ".m4a"),
+            Map.entry("audio/x-m4a", ".m4a"),
             Map.entry("video/mp4", ".mp4"),
             Map.entry("application/pdf", ".pdf")
     );
 
     /** Libelle pour les messages d'erreur, pour n'enumerer les formats qu'ici. */
-    public static final String FORMATS_LISIBLES = "JPEG, PNG, WebP, MP3, MP4 ou PDF";
+    public static final String FORMATS_LISIBLES = "JPEG, PNG, WebP, MP3, M4A, MP4 ou PDF";
 
     private FormatsAutorises() {
     }
