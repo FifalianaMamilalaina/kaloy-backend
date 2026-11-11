@@ -34,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
-        log.info("JWT request uri={}, bearerPresent={}", request.getRequestURI(),
+        log.debug("JWT request uri={}, bearerPresent={}", request.getRequestURI(),
                 authHeader != null && authHeader.startsWith("Bearer "));
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -44,8 +44,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        if (!jwtService.isTokenValid(token)) {
-            log.warn("JWT invalide pour uri={}", request.getRequestURI());
+        JwtService.TokenValidationResult validation = jwtService.validateAccessToken(token);
+        if (validation != JwtService.TokenValidationResult.VALID) {
+            log.warn("JWT rejected: reason={}, uri={}", validation, request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
@@ -58,7 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     userDetails, null, userDetails.getAuthorities());
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authToken);
-            log.info("JWT accepté pour email={}, uri={}", email, request.getRequestURI());
+            log.debug("JWT accepted for uri={}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

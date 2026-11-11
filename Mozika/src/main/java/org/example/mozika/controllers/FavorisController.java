@@ -11,6 +11,7 @@ import org.example.mozika.dto.RestResponse;
 import org.example.mozika.models.dto.FavorisAlbumResponse;
 import org.example.mozika.models.dto.FavorisArtisteResponse;
 import org.example.mozika.models.dto.FavorisSongResponse;
+import org.example.mozika.models.dto.StatsFavorisResponse;
 import org.example.mozika.services.interfaces.FavorisService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,24 @@ public class FavorisController {
 
     public FavorisController(FavorisService favorisService) {
         this.favorisService = favorisService;
+    }
+
+    @Operation(summary = "Détail des favoris par catégorie (chansons, albums, artistes)")
+    @GetMapping("/stats")
+    public ResponseEntity<RestResponse<StatsFavorisResponse>> getStatsFavoris(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        StatsFavorisResponse stats = favorisService.getStatsFavoris(userDetails.getUsername());
+        return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+                HttpStatus.OK, "Statistiques des favoris.", stats));
+    }
+
+    @Operation(summary = "Nombre total de favoris (chansons + albums + artistes)")
+    @GetMapping("/count")
+    public ResponseEntity<RestResponse<Long>> countMesFavoris(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        long count = favorisService.countMesFavoris(userDetails.getUsername());
+        return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+                HttpStatus.OK, "Nombre de favoris.", count));
     }
 
     // ── Chansons ──────────────────────────────────────────────────────────────

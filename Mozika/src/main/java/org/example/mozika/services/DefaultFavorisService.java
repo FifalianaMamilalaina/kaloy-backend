@@ -11,6 +11,7 @@ import org.example.mozika.models.User;
 import org.example.mozika.models.dto.FavorisAlbumResponse;
 import org.example.mozika.models.dto.FavorisArtisteResponse;
 import org.example.mozika.models.dto.FavorisSongResponse;
+import org.example.mozika.models.dto.StatsFavorisResponse;
 import org.example.mozika.repositories.AlbumRepository;
 import org.example.mozika.repositories.ArtistRepository;
 import org.example.mozika.repositories.InteractionTargetRepository;
@@ -249,5 +250,23 @@ public class DefaultFavorisService implements FavorisService {
         return likeRepository
                 .findByUseridUsersAndTargettypeidInteractionTargetsAndTargetId(user, target, artistId)
                 .isPresent();
+    }
+
+    @Override
+    public long countMesFavoris(String email) {
+        User user = resolveUser(email);
+        return likeRepository.countByUseridUsers(user);
+    }
+
+    @Override
+    public StatsFavorisResponse getStatsFavoris(String email) {
+        User user = resolveUser(email);
+        long chansons = likeRepository.countByUseridUsersAndTargettypeidInteractionTargets(
+                user, resolveTarget(TARGET_SONG));
+        long albums = likeRepository.countByUseridUsersAndTargettypeidInteractionTargets(
+                user, resolveTarget(TARGET_ALBUM));
+        long artistes = likeRepository.countByUseridUsersAndTargettypeidInteractionTargets(
+                user, resolveTarget(TARGET_ARTIST));
+        return new StatsFavorisResponse(chansons, albums, artistes);
     }
 }

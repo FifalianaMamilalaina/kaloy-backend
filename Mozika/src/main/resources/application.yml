@@ -53,9 +53,8 @@ minio:
   public-url: http://${adresse_ip}:9000
   access-key: minioadmin
   secret-key: minioadmin
-  bucket: kaloy
+  bucket: kaloy-media
   presigned-url-expiry-days: 7
-
 
 kaloy:
   uploads:

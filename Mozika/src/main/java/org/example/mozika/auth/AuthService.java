@@ -8,4 +8,6 @@ public interface AuthService {
     AuthResponse verifyOtp(OtpVerifyRequest request);
     String resendOtp(ResendOtpRequest request);
     AuthResponse login(LoginRequest request);
+    AuthResponse refresh(String refreshToken);
+    void revokeRefreshToken(String refreshToken);
 }

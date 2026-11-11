@@ -63,12 +63,8 @@ private final EventMediaService eventmediaService;
 	@ApiResponses({
 	    @ApiResponse(
 	        responseCode = "200",
-	        description = "Successfully retrieved the paginated list of event",
+	        description = "Successfully retrieved the paginated list of event (empty when no data exists)",
 	        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))
-	    ),
-	    @ApiResponse(
-	        responseCode = "204",
-	        description = "No event found"
 	    )
 	})
 	@GetMapping
@@ -91,13 +87,7 @@ private final EventMediaService eventmediaService;
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<Event> events = eventService.getAllEvent(pageable);
 	
-	    String message = "event retrieved successfully";
-	
-	    if(!events.hasContent()) {
-	            message = "No event found";
-	            throw new ResourceNotFoundException(message);
-	    }
-	
+	    String message = events.hasContent() ? "event retrieved successfully" : "No event found";
 	    RestResponse<Page<Event>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,
 	            message,
@@ -112,12 +102,8 @@ private final EventMediaService eventmediaService;
 	@ApiResponses({
 	    @ApiResponse(
 	        responseCode = "200",
-	        description = "Successfully retrieved the paginated list of event",
+	        description = "Successfully retrieved the paginated list of event (empty when no data matches)",
 	        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))
-	    ),
-	    @ApiResponse(
-	        responseCode = "204",
-	        description = "No event found"
 	    )
 	})
 	@PostMapping("/search")
@@ -141,13 +127,7 @@ private final EventMediaService eventmediaService;
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<Event> events = eventService.getAllEvent(pageable, object);
 	
-	    String message = "event retrieved successfully";
-	
-	    if(!events.hasContent()) {
-	            message = "No event found";
-	            throw new ResourceNotFoundException(message);
-	    }
-	
+	    String message = events.hasContent() ? "event retrieved successfully" : "No event found";
 	    RestResponse<Page<Event>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,
 	            message,

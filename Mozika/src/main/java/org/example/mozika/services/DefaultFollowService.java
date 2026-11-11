@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.example.mozika.models.Follow;
+import org.example.mozika.models.dto.FollowArtisteResponse;
 import org.example.mozika.models.dto.FollowSearch;
 import org.springframework.stereotype.Service;
 import org.example.mozika.repositories.FollowRepository;
@@ -107,6 +108,16 @@ public class DefaultFollowService implements FollowService {
 	    return followRepository.countByClientuseridUsers(user);
 	}
 
-
-
+	@Override
+	public List<FollowArtisteResponse> getMesFollows(String email) {
+	    User user = userRepository.findByEmail(email)
+	            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+	    return followRepository.findByClientuseridUsers(user).stream()
+	            .map(f -> new FollowArtisteResponse(
+	                    f.getId(),
+	                    f.getArtistidArtists().getId(),
+	                    f.getArtistidArtists().getStageName(),
+	                    f.getArtistidArtists().getPhotoUrl()))
+	            .collect(java.util.stream.Collectors.toList());
+	}
 }

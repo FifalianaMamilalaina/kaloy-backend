@@ -1,9 +1,10 @@
 package org.example.mozika.services.interfaces;
 
 import org.example.mozika.models.Follow;
+import org.example.mozika.models.dto.FollowArtisteResponse;
 import org.example.mozika.models.dto.FollowSearch;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;    
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 
@@ -26,5 +27,5 @@ public interface FollowService {
 
     long countMyFollows(String email);
 
-
+    List<FollowArtisteResponse> getMesFollows(String email);
 }
