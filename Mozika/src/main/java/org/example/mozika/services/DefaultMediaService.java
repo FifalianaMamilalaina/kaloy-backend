@@ -54,7 +54,7 @@ public class DefaultMediaService implements MediaService {
         dto.setLanguage(song.getLanguage());
         dto.setReleaseDate(song.getReleaseDate());
         dto.setIsDownloadable(song.getIsDownloadable());
-        dto.setLyrics(song.getLyrics());
+        dto.setLyrics(resoudreLyrics(song.getLyrics()));
         dto.setLyricsSyncData(song.getLyricsSyncData());
         // Le solfa en texte, a cote des paroles. setSolfa et non setSolfaUrl :
         // cette derniere attend un fichier, et reste vide tant qu'il n'y en a pas.
@@ -132,6 +132,14 @@ public class DefaultMediaService implements MediaService {
             return storageService.getPresignedUrl(valeurStockee);
         }
         return streamUrl(songId, mediaType);
+    }
+
+    private String resoudreLyrics(String valeurStockee) {
+        if (valeurStockee == null || valeurStockee.isBlank()) return null;
+        if (valeurStockee.toLowerCase().endsWith(".txt")) {
+            return storageService.getTextContent(valeurStockee);
+        }
+        return valeurStockee;
     }
 
     private boolean estUrlAbsolue(String valeur) {

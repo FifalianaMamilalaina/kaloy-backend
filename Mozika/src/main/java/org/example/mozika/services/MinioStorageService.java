@@ -10,6 +10,7 @@ import io.minio.StatObjectResponse;
 import io.minio.http.Method;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import org.example.mozika.exception.InternalServerErrorException;
 import org.example.mozika.services.interfaces.StorageService;
@@ -101,6 +102,18 @@ public class MinioStorageService implements StorageService {
                     .build());
         } catch (Exception e) {
             throw new InternalServerErrorException("Média introuvable : " + objectName, e);
+        }
+    }
+
+    @Override
+    public String getTextContent(String objectName) {
+        try (GetObjectResponse response = getObject(objectName)) {
+            return new String(response.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (InternalServerErrorException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la lecture du fichier texte MinIO: {}", objectName, e);
+            throw new InternalServerErrorException("Erreur lors de la lecture du fichier texte : " + objectName, e);
         }
     }
 

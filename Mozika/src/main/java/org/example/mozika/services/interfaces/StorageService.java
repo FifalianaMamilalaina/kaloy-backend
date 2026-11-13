@@ -18,4 +18,6 @@ public interface StorageService {
     StatObjectResponse statObject(String objectName);
 
     void uploadObject(String objectName, InputStream inputStream, long size, String contentType);
+
+    String getTextContent(String objectName);
 }
