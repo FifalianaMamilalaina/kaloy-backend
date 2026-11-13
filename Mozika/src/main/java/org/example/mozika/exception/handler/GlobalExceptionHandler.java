@@ -122,6 +122,16 @@ public class GlobalExceptionHandler {
         if (normalized.contains("email") || normalized.contains("mail")) {
             return "Cette adresse e-mail est déjà associée à un compte. Veuillez en utiliser une autre ou vous connecter à votre compte existant.";
         }
-        return "Un compte existe déjà avec ces informations. Veuillez vous connecter ou en utiliser d'autres.";
+
+        // Toute autre violation n'a RIEN a voir avec un compte : un doublon
+        // de lien, une cle etrangere, une colonne obligatoire. Repondre « un
+        // compte existe deja » envoyait chercher au mauvais endroit -- un
+        // doublon dans song_genres s'affichait ainsi comme un probleme de
+        // compte sur l'ecran de modification d'une chanson.
+        //
+        // Le detail part au journal : il nomme la contrainte, ce qu'un
+        // message destine a l'utilisateur ne doit pas faire.
+        log.warn("Violation d'integrite hors compte : {}", rootMessage);
+        return "Cette opération entre en conflit avec des données déjà enregistrées.";
     }
 }

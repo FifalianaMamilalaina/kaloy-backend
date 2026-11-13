@@ -23,6 +23,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Chansons declarees par l'artiste connecte.
@@ -305,21 +308,52 @@ public class ServiceMesChansons {
     }
 
     /**
-     * Les genres de la chanson, remis a plat.
+     * Les genres de la chanson, mis a jour PAR DIFFERENCE.
      *
-     * On efface puis on reecrit, au lieu de calculer la difference : la
-     * liste compte au plus dix elements, et une difference serait du code
-     * en plus pour la meme ecriture.
+     * On ne touche qu'a ce qui change : les liens retires sont supprimes,
+     * les nouveaux ajoutes, et ceux qui restent ne sont pas reecrits.
+     *
+     * La version precedente effacait tout puis reinserait, au motif qu'une
+     * difference aurait ete du code en plus pour la meme ecriture. Elle se
+     * trompait sur deux points.
+     *
+     * D'abord song_genres PORTE bien une contrainte d'unicite sur le couple
+     * (song_id, genre_id) : l'index uq_song_genres_song_genre, cree par le
+     * script de reference. Le commentaire affirmait le contraire.
+     *
+     * Ensuite Hibernate n'execute pas les ordres dans celui ou on les ecrit :
+     * sa file d'actions passe les INSERT AVANT les DELETE. L'insertion d'un
+     * genre inchange arrivait donc alors que l'ancienne ligne etait encore
+     * la, et l'index la refusait. Reenregistrer une chanson sans changer ses
+     * genres echouait ainsi, precisement parce qu'ils n'avaient pas change.
+     *
+     * Travailler par difference supprime le probleme au lieu de le
+     * contourner : suppressions et insertions portent sur des genres
+     * disjoints, donc aucun ordre d'execution ne peut plus les faire entrer
+     * en collision. Et le cas courant -- des genres inchanges -- n'ecrit
+     * plus rien du tout.
      */
     private void remplacerGenres(Song chanson, List<Long> idsGenres) {
-        songGenreRepository.deleteAll(songGenreRepository.findBySongidSongs(chanson));
-        if (idsGenres == null || idsGenres.isEmpty()) {
-            return;
+        List<SongGenre> existants = songGenreRepository.findBySongidSongs(chanson);
+        Set<Long> actuels = existants.stream()
+                .map(lien -> lien.getGenreidGenres().getId())
+                .collect(Collectors.toSet());
+
+        // Un Set, donc la meme valeur envoyee deux fois ne produit qu'un lien.
+        Set<Long> voulus = idsGenres == null
+                ? Set.of()
+                : idsGenres.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+
+        for (SongGenre lien : existants) {
+            if (!voulus.contains(lien.getGenreidGenres().getId())) {
+                songGenreRepository.delete(lien);
+            }
         }
-        // distinct : song_genres ne porte aucune contrainte d'unicite sur le
-        // couple (song_id, genre_id). Deux fois le meme genre passerait en
-        // base, et la chanson ressortirait deux fois dans ce genre.
-        for (Long idGenre : idsGenres.stream().distinct().toList()) {
+
+        for (Long idGenre : voulus) {
+            if (actuels.contains(idGenre)) {
+                continue;
+            }
             Genre genre = genreRepository.findById(idGenre)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Genre introuvable avec l'id : " + idGenre));
