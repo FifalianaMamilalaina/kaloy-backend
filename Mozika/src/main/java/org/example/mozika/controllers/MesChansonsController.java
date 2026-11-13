@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.example.mozika.dto.RestResponse;
+import org.example.mozika.dto.chanson.ChansonAModifierResponse;
 import org.example.mozika.dto.chanson.CreerChansonRequest;
 import org.example.mozika.dto.chanson.ModifierChansonRequest;
 import org.example.mozika.dto.chanson.OptionsChansonResponse;
@@ -64,6 +65,25 @@ public class MesChansonsController {
         OptionsChansonResponse options = service.options(userDetails.getUsername());
         return ResponseEntity.ok(RestResponse.buildSuccessResponse(
                 HttpStatus.OK, "options recuperees avec succes", options));
+    }
+
+    @Operation(
+            summary = "Une de mes chansons, pour la modifier",
+            description = "Tout ce que le formulaire de modification doit pre-remplir, "
+                    + "genres compris. La liste ne suffit pas : elle renvoie des entites "
+                    + "Song, qui ne portent pas leurs genres. Les adresses des medias sont "
+                    + "celles de la base, non resolues en adresses de lecture, pour pouvoir "
+                    + "etre renvoyees telles quelles."
+    )
+    @GetMapping("/{idChanson}")
+    public ResponseEntity<RestResponse<ChansonAModifierResponse>> chansonAModifier(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "Identifiant de la chanson", required = true)
+            @PathVariable Long idChanson) {
+        ChansonAModifierResponse chanson =
+                service.chansonAModifier(userDetails.getUsername(), idChanson);
+        return ResponseEntity.ok(RestResponse.buildSuccessResponse(
+                HttpStatus.OK, "chanson recuperee avec succes", chanson));
     }
 
     @Operation(

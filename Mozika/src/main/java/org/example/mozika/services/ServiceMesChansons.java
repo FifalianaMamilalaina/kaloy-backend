@@ -1,5 +1,6 @@
 package org.example.mozika.services;
 
+import org.example.mozika.dto.chanson.ChansonAModifierResponse;
 import org.example.mozika.dto.chanson.CreerChansonRequest;
 import org.example.mozika.dto.chanson.ModifierChansonRequest;
 import org.example.mozika.dto.chanson.OptionsChansonResponse;
@@ -22,6 +23,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Chansons declarees par l'artiste connecte.
@@ -95,6 +99,46 @@ public class ServiceMesChansons {
     }
 
     @Transactional
+    /**
+     * L'etat d'une chanson tel que le formulaire de modification le
+     * pre-remplit.
+     *
+     * Un appel a part, et non la liste : GET /mes-chansons renvoie des
+     * entites Song, et Song NE PORTE PAS ses genres -- ils vivent dans
+     * song_genres, sans relation declaree. Le formulaire se serait ouvert
+     * en affichant « aucun genre », puis l'enregistrement aurait envoye une
+     * liste vide, et remplacerGenres() efface TOUS les liens avant de
+     * reinserer. Chaque modification aurait donc supprime les genres sans
+     * la moindre erreur : une perte silencieuse.
+     *
+     * maChanson() verifie au passage que la chanson appartient bien a
+     * l'artiste connecte, comme pour la modification et la suppression.
+     */
+    public ChansonAModifierResponse chansonAModifier(String emailConnecte, Long idChanson) {
+        Song chanson = maChanson(emailConnecte, idChanson);
+
+        List<Long> idsGenres = songGenreRepository.findBySongidSongs(chanson).stream()
+                .map(lien -> lien.getGenreidGenres().getId())
+                .toList();
+
+        return new ChansonAModifierResponse(
+                chanson.getId(),
+                chanson.getTitle(),
+                chanson.getLyrics(),
+                chanson.getSolfa(),
+                chanson.getLanguage(),
+                chanson.getAudioUrl(),
+                chanson.getVideoUrl(),
+                chanson.getKaraokeAudioUrl(),
+                chanson.getPlaybackUrl(),
+                chanson.getAuthorComposer(),
+                chanson.getMusicalArranger(),
+                chanson.getDurationSeconds(),
+                chanson.getReleaseDate(),
+                chanson.getAlbumidAlbums() == null ? null : chanson.getAlbumidAlbums().getId(),
+                idsGenres);
+    }
+
     public Song creer(String emailConnecte, CreerChansonRequest requete) {
         Artist artiste = serviceArtisteConnecte.resoudre(emailConnecte);
 
@@ -167,10 +211,25 @@ public class ServiceMesChansons {
         if (requete.getArrangeur() != null) {
             chanson.setMusicalArranger(normaliser(requete.getArrangeur()));
         }
-        if (requete.getDureeSecondes() != null) chanson.setDurationSeconds(requete.getDureeSecondes());
-        if (requete.getDateSortie() != null) chanson.setReleaseDate(requete.getDateSortie());
+        // Les trois champs non textuels. L'effacement l'emporte sur la
+        // valeur : sans ces branches, l'album, la date et la duree pouvaient
+        // etre poses mais jamais retires, faute de « chaine vide » pour dire
+        // « enleve-le ». Un album choisi par erreur restait pour toujours.
+        if (Boolean.TRUE.equals(requete.getEffacerDuree())) {
+            chanson.setDurationSeconds(null);
+        } else if (requete.getDureeSecondes() != null) {
+            chanson.setDurationSeconds(requete.getDureeSecondes());
+        }
 
-        if (requete.getIdAlbum() != null) {
+        if (Boolean.TRUE.equals(requete.getEffacerDateSortie())) {
+            chanson.setReleaseDate(null);
+        } else if (requete.getDateSortie() != null) {
+            chanson.setReleaseDate(requete.getDateSortie());
+        }
+
+        if (Boolean.TRUE.equals(requete.getEffacerAlbum())) {
+            chanson.setAlbumidAlbums(null);
+        } else if (requete.getIdAlbum() != null) {
             chanson.setAlbumidAlbums(monAlbum(chanson.getArtistidArtists(), requete.getIdAlbum()));
         }
         // Le type suit l'audio dans tous les cas : si l'artiste ajoute un
@@ -249,21 +308,52 @@ public class ServiceMesChansons {
     }
 
     /**
-     * Les genres de la chanson, remis a plat.
+     * Les genres de la chanson, mis a jour PAR DIFFERENCE.
      *
-     * On efface puis on reecrit, au lieu de calculer la difference : la
-     * liste compte au plus dix elements, et une difference serait du code
-     * en plus pour la meme ecriture.
+     * On ne touche qu'a ce qui change : les liens retires sont supprimes,
+     * les nouveaux ajoutes, et ceux qui restent ne sont pas reecrits.
+     *
+     * La version precedente effacait tout puis reinserait, au motif qu'une
+     * difference aurait ete du code en plus pour la meme ecriture. Elle se
+     * trompait sur deux points.
+     *
+     * D'abord song_genres PORTE bien une contrainte d'unicite sur le couple
+     * (song_id, genre_id) : l'index uq_song_genres_song_genre, cree par le
+     * script de reference. Le commentaire affirmait le contraire.
+     *
+     * Ensuite Hibernate n'execute pas les ordres dans celui ou on les ecrit :
+     * sa file d'actions passe les INSERT AVANT les DELETE. L'insertion d'un
+     * genre inchange arrivait donc alors que l'ancienne ligne etait encore
+     * la, et l'index la refusait. Reenregistrer une chanson sans changer ses
+     * genres echouait ainsi, precisement parce qu'ils n'avaient pas change.
+     *
+     * Travailler par difference supprime le probleme au lieu de le
+     * contourner : suppressions et insertions portent sur des genres
+     * disjoints, donc aucun ordre d'execution ne peut plus les faire entrer
+     * en collision. Et le cas courant -- des genres inchanges -- n'ecrit
+     * plus rien du tout.
      */
     private void remplacerGenres(Song chanson, List<Long> idsGenres) {
-        songGenreRepository.deleteAll(songGenreRepository.findBySongidSongs(chanson));
-        if (idsGenres == null || idsGenres.isEmpty()) {
-            return;
+        List<SongGenre> existants = songGenreRepository.findBySongidSongs(chanson);
+        Set<Long> actuels = existants.stream()
+                .map(lien -> lien.getGenreidGenres().getId())
+                .collect(Collectors.toSet());
+
+        // Un Set, donc la meme valeur envoyee deux fois ne produit qu'un lien.
+        Set<Long> voulus = idsGenres == null
+                ? Set.of()
+                : idsGenres.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+
+        for (SongGenre lien : existants) {
+            if (!voulus.contains(lien.getGenreidGenres().getId())) {
+                songGenreRepository.delete(lien);
+            }
         }
-        // distinct : song_genres ne porte aucune contrainte d'unicite sur le
-        // couple (song_id, genre_id). Deux fois le meme genre passerait en
-        // base, et la chanson ressortirait deux fois dans ce genre.
-        for (Long idGenre : idsGenres.stream().distinct().toList()) {
+
+        for (Long idGenre : voulus) {
+            if (actuels.contains(idGenre)) {
+                continue;
+            }
             Genre genre = genreRepository.findById(idGenre)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Genre introuvable avec l'id : " + idGenre));

@@ -60,6 +60,26 @@ public class ModifierChansonRequest {
      */
     private List<Long> idsGenres;
 
+    /**
+     * Les trois effacements explicites.
+     *
+     * L'album, la date de sortie et la duree ne sont pas du texte : il
+     * n'existe pas de « chaine vide » pour dire « enleve-le ». Avec la
+     * seule convention null = inchange, ces trois champs pouvaient etre
+     * renseignes mais JAMAIS retires : un album choisi par erreur restait
+     * pour toujours, et la chanson figurait definitivement dedans.
+     *
+     * Un drapeau plutot qu'une valeur sentinelle comme 0 ou -1 : une
+     * sentinelle se confond avec une vraie valeur le jour ou le domaine
+     * change, et elle ne se lit pas dans le corps de la requete.
+     *
+     * L'effacement l'emporte sur la valeur si les deux arrivent. Le
+     * mobile n'envoie jamais les deux.
+     */
+    private Boolean effacerAlbum;
+    private Boolean effacerDateSortie;
+    private Boolean effacerDuree;
+
     public String getTitre() { return titre; }
     public void setTitre(String titre) { this.titre = titre; }
 
@@ -101,4 +121,15 @@ public class ModifierChansonRequest {
 
     public List<Long> getIdsGenres() { return idsGenres; }
     public void setIdsGenres(List<Long> idsGenres) { this.idsGenres = idsGenres; }
+
+    public Boolean getEffacerAlbum() { return effacerAlbum; }
+    public void setEffacerAlbum(Boolean effacerAlbum) { this.effacerAlbum = effacerAlbum; }
+
+    public Boolean getEffacerDateSortie() { return effacerDateSortie; }
+    public void setEffacerDateSortie(Boolean effacerDateSortie) {
+        this.effacerDateSortie = effacerDateSortie;
+    }
+
+    public Boolean getEffacerDuree() { return effacerDuree; }
+    public void setEffacerDuree(Boolean effacerDuree) { this.effacerDuree = effacerDuree; }
 }
