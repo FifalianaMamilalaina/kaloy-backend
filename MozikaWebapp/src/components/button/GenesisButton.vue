@@ -1,5 +1,5 @@
 <template>
-  <button v-bind="$attrs" class="btn" :disabled="isLoading">
+  <button v-bind="$attrs" class="btn mz-btn" :disabled="isLoading">
     <span v-if="isLoading" class="loading loading-spinner"></span>
     <slot v-else>
       <i v-if="icon" :class="icon" />
@@ -15,4 +15,3 @@ defineProps<{
   isLoading?: boolean
 }>()
 </script>
-qa

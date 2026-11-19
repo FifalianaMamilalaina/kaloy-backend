@@ -1,0 +1,316 @@
+/* ==========================================================================
+   MOZIKA DESIGN SYSTEM — Tokens, Utilitaires & Composants Harmonisés
+   ========================================================================== */
+
+:root {
+  /* ── 1. PALETTE DE COULEURS PRIMAIRES & THEME ── */
+  --mz-brand-dark-base: #0e0922; /* Fond d'application très sombre */
+  --mz-brand-dark-surface: #171033; /* Surface sombre pour cartes et barres */
+  --mz-brand-dark-card: #211747; /* Panneau sombre supérieur */
+  --mz-brand-purple: #372370; /* Pourpre vibrant pour dégradés */
+  --mz-brand-accent: #e67300; /* Orange ambré vif (boutons, focus, CTA) */
+  --mz-brand-accent-hover: #ff851a; /* Orange hover */
+  --mz-brand-accent-light: rgba(230, 115, 0, 0.12); /* Fond d'accent translucide */
+  --mz-brand-accent-glow: rgba(230, 115, 0, 0.35); /* Halo lumineux */
+
+  /* ── 2. SURFACES & ELEMENTS CLAIRS (Contraste) ── */
+  --mz-surface-light: #ffffff;
+  --mz-surface-light-soft: #f8f9fb;
+  --mz-surface-light-muted: #edf0f5;
+  --mz-surface-glass-dark: rgba(14, 9, 34, 0.78);
+  --mz-surface-glass-light: rgba(255, 255, 255, 0.92);
+
+  /* ── 3. TEXTES & CONTENUS ── */
+  --mz-text-on-dark-high: #ffffff;
+  --mz-text-on-dark-medium: rgba(255, 255, 255, 0.82);
+  --mz-text-on-dark-muted: rgba(255, 255, 255, 0.55);
+  --mz-text-on-light-high: #0f172a; /* Titres sombres sur fond clair */
+  --mz-text-on-light-medium: #334155; /* Corps de texte */
+  --mz-text-on-light-muted: #64748b; /* Descriptions secondaires */
+  --mz-text-accent: #e67300;
+
+  /* ── 4. STATUTS ── */
+  --mz-color-success: #10b981;
+  --mz-color-success-bg: rgba(16, 185, 129, 0.12);
+  --mz-color-warning: #f59e0b;
+  --mz-color-warning-bg: rgba(245, 158, 11, 0.12);
+  --mz-color-danger: #ef4444;
+  --mz-color-danger-bg: rgba(239, 68, 68, 0.12);
+  --mz-color-info: #3b82f6;
+  --mz-color-info-bg: rgba(59, 130, 246, 0.12);
+
+  /* ── 5. BORDURES ── */
+  --mz-border-subtle-dark: rgba(255, 255, 255, 0.12);
+  --mz-border-medium-dark: rgba(255, 255, 255, 0.22);
+  --mz-border-subtle-light: #e2e8f0;
+  --mz-border-medium-light: #cbd5e1;
+  --mz-border-accent: rgba(230, 115, 0, 0.45);
+
+  /* ── 6. RAYONS DE COURBURE (BORDER-RADIUS) ── */
+  --mz-radius-xs: 6px;
+  --mz-radius-sm: 10px;
+  --mz-radius-md: 14px;
+  --mz-radius-lg: 20px;
+  --mz-radius-xl: 26px;
+  --mz-radius-pill: 9999px;
+
+  /* ── 7. OMBRES & PROFONDEUR ── */
+  --mz-shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --mz-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --mz-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.14);
+  --mz-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.22);
+  --mz-shadow-glow: 0 8px 24px var(--mz-brand-accent-glow);
+
+  /* ── 8. ESPACEMENTS ── */
+  --mz-space-1: 4px;
+  --mz-space-2: 8px;
+  --mz-space-3: 12px;
+  --mz-space-4: 16px;
+  --mz-space-5: 20px;
+  --mz-space-6: 24px;
+  --mz-space-8: 32px;
+  --mz-space-10: 40px;
+  --mz-space-12: 48px;
+
+  /* ── 9. TYPOGRAPHIE STANDARDISÉE ── */
+  --mz-font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mz-font-size-xs: 11.5px;
+  --mz-font-size-sm: 13px;
+  --mz-font-size-base: 15px;
+  --mz-font-size-md: 17px;
+  --mz-font-size-lg: 20px;
+  --mz-font-size-xl: 24px;
+  --mz-font-size-2xl: 30px;
+  --mz-font-size-3xl: 38px;
+}
+
+/* ==========================================================================
+   COMPOSANTS HARMONISÉS
+   ========================================================================== */
+
+/* ── BOUTONS ── */
+.mz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mz-space-2);
+  font-family: var(--mz-font-family);
+  font-size: var(--mz-font-size-sm);
+  font-weight: 700;
+  line-height: 1;
+  padding: 10px 18px;
+  border-radius: var(--mz-radius-pill);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  text-decoration: none;
+}
+.mz-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Bouton Primaire (Orange vibrant Mozika) */
+.mz-btn-primary {
+  background: linear-gradient(135deg, #e67300 0%, #ff8a00 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--mz-brand-accent-glow);
+}
+.mz-btn-primary:hover {
+  background: linear-gradient(135deg, #c45e00 0%, #e67300 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--mz-brand-accent-glow);
+}
+.mz-btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* Bouton Secondaire (Pourpre Mozika) */
+.mz-btn-secondary {
+  background: linear-gradient(135deg, #1b1340 0%, #2f1d6b 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.mz-btn-secondary:hover {
+  background: linear-gradient(135deg, #271a5c 0%, #3d2880 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Bouton Contour (Outline) */
+.mz-btn-outline {
+  background: transparent;
+  color: var(--mz-text-on-light-medium);
+  border: 1.5px solid var(--mz-border-subtle-light);
+}
+.mz-btn-outline:hover {
+  border-color: var(--mz-brand-accent);
+  color: var(--mz-brand-accent);
+  background: var(--mz-brand-accent-light);
+}
+
+/* Bouton Ghost */
+.mz-btn-ghost {
+  background: transparent;
+  color: var(--mz-text-on-light-muted);
+}
+.mz-btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--mz-brand-accent);
+}
+
+/* Bouton compact / Puce de suivi */
+.mz-btn-chip {
+  padding: 6px 14px;
+  font-size: var(--mz-font-size-xs);
+  border-radius: var(--mz-radius-pill);
+  border: 1px solid var(--mz-border-subtle-light);
+  background: #ffffff;
+  color: var(--mz-text-on-light-medium);
+}
+.mz-btn-chip.is-active,
+.mz-btn-chip:hover {
+  background: var(--mz-brand-accent-light);
+  border-color: var(--mz-brand-accent);
+  color: var(--mz-brand-accent);
+}
+
+/* ── CARTES (CARDS) ── */
+.mz-card {
+  background: var(--mz-surface-light);
+  border: 1px solid var(--mz-border-subtle-light);
+  border-radius: var(--mz-radius-xl);
+  padding: var(--mz-space-5);
+  box-shadow: var(--mz-shadow-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mz-card-interactive {
+  cursor: pointer;
+}
+.mz-card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--mz-shadow-md);
+  border-color: var(--mz-border-accent);
+}
+
+/* Carte Glassmorphism Sombre */
+.mz-card-glass {
+  background: var(--mz-surface-glass-dark);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--mz-border-subtle-dark);
+  border-radius: var(--mz-radius-xl);
+  color: var(--mz-text-on-dark-high);
+}
+
+/* ── FORMULAIRES & CHAMPS DE SAISIE ── */
+.mz-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mz-space-1);
+}
+.mz-label {
+  font-size: var(--mz-font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mz-text-on-light-muted);
+}
+.mz-input,
+.mz-select {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--mz-font-family);
+  font-size: var(--mz-font-size-base);
+  color: var(--mz-text-on-light-high);
+  background: #ffffff;
+  border: 1.5px solid var(--mz-border-subtle-light);
+  border-radius: var(--mz-radius-md);
+  transition: all 0.2s ease;
+  outline: none;
+}
+.mz-input:focus,
+.mz-select:focus {
+  border-color: var(--mz-brand-accent);
+  box-shadow: 0 0 0 3px var(--mz-brand-accent-glow);
+}
+.mz-input::placeholder {
+  color: #94a3b8;
+}
+
+/* ── BADGES & PAILLES DE STATUT ── */
+.mz-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mz-space-1);
+  padding: 4px 10px;
+  font-size: var(--mz-font-size-xs);
+  font-weight: 700;
+  border-radius: var(--mz-radius-pill);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mz-badge-primary {
+  background: var(--mz-brand-accent-light);
+  color: var(--mz-brand-accent);
+  border: 1px solid var(--mz-border-accent);
+}
+.mz-badge-success {
+  background: var(--mz-color-success-bg);
+  color: var(--mz-color-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.mz-badge-warning {
+  background: var(--mz-color-warning-bg);
+  color: var(--mz-color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.mz-badge-danger {
+  background: var(--mz-color-danger-bg);
+  color: var(--mz-color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.mz-badge-glass {
+  background: rgba(14, 9, 34, 0.55);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ── AVATARS ── */
+.mz-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background: linear-gradient(135deg, #1b1340 0%, #e67300 100%);
+  color: #ffffff;
+  box-shadow: var(--mz-shadow-xs);
+  border: 2px solid #ffffff;
+}
+.mz-avatar-sm {
+  width: 34px;
+  height: 34px;
+  font-size: var(--mz-font-size-xs);
+}
+.mz-avatar-md {
+  width: 48px;
+  height: 48px;
+  font-size: var(--mz-font-size-sm);
+}
+.mz-avatar-lg {
+  width: 72px;
+  height: 72px;
+  font-size: var(--mz-font-size-lg);
+}
+.mz-avatar-xl {
+  width: 96px;
+  height: 96px;
+  font-size: var(--mz-font-size-2xl);
+}

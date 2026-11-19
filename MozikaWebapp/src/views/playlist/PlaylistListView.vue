@@ -1,25 +1,19 @@
 <template>
-  <div class="w-full">
+  <div class="mz-page-view">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-semibold text-base-content">
-        {{ $t('entity.nav', { entity: 'Playlist' }) }}
-        <span class="text-base-content/50 font-normal"> {{ $t('entity.list.nav') }}</span>
-      </h3>
-      <div class="flex items-center gap-3">
-        <!-- Composant réutilisable pour le basculement de vue -->
+    <PageHeader :title="$t('entity.nav', { entity: 'Playlist' })" :subtitle="$t('entity.list.nav')">
+      <template #actions>
         <LayoutSwitcher v-model="layoutMode" />
-
         <GenesisButton
           title="Create new playlist"
           @click="goToCreateFormView"
-          class="btn-secondary"
+          class="mz-btn mz-btn-primary"
         >
           <PlusIcon />
           {{ $t('button.addEntity', { entity: 'Playlist' }) }}
         </GenesisButton>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Table -->
     <EntityTable
@@ -45,6 +39,7 @@ import { Playlist } from '@/models/PlaylistModel'
 import PlaylistList from '@/entities/playlist/PlaylistList.vue'
 import EntityTable from '@/components/table/EntityTable.vue'
 import LayoutSwitcher from '@/components/button/LayoutSwitcher.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { usePlaylists } from '@/composables/usePlaylists'
 import GenesisButton from '@/components/button/GenesisButton.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'

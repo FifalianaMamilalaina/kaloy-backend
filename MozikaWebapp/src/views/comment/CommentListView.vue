@@ -1,21 +1,19 @@
 <template>
-  <div class="w-full">
+  <div class="mz-page-view">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-semibold text-base-content">
-        {{ $t('entity.nav', { entity: 'Comment' }) }}
-        <span class="text-base-content/50 font-normal"> {{ $t('entity.list.nav') }}</span>
-      </h3>
-      <div class="flex items-center gap-3">
-        <!-- Composant réutilisable pour le basculement de vue -->
+    <PageHeader :title="$t('entity.nav', { entity: 'Comment' })" :subtitle="$t('entity.list.nav')">
+      <template #actions>
         <LayoutSwitcher v-model="layoutMode" />
-
-        <GenesisButton title="Create new comment" @click="goToCreateFormView" class="btn-secondary">
+        <GenesisButton
+          title="Create new comment"
+          @click="goToCreateFormView"
+          class="mz-btn mz-btn-primary"
+        >
           <PlusIcon />
           {{ $t('button.addEntity', { entity: 'Comment' }) }}
         </GenesisButton>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Table -->
     <EntityTable
@@ -41,6 +39,7 @@ import { Comment } from '@/models/CommentModel'
 import CommentList from '@/entities/comment/CommentList.vue'
 import EntityTable from '@/components/table/EntityTable.vue'
 import LayoutSwitcher from '@/components/button/LayoutSwitcher.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useComments } from '@/composables/useComments'
 import GenesisButton from '@/components/button/GenesisButton.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'

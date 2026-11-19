@@ -1,5 +1,5 @@
 <template>
-  <GenesisButton icon="fa fa-plus">
+  <GenesisButton icon="fa fa-plus" class="mz-btn-primary">
     <span v-if="label">{{ label }}</span>
     <span v-else><slot /></span>
   </GenesisButton>

@@ -1,56 +1,47 @@
 <template>
-  <aside
-    class="bg-base-200/40 border-r border-base-content/10 flex flex-col justify-between shadow-sm"
-    style="min-width: 280px"
-  >
+  <aside class="mz-sidebar">
     <!-- Brand -->
-    <router-link to="/" class="flex justify-center items-center px-6">
-      <AppLogo size="80" />
-      <h1 class="text-lg font-semibold tracking-wide uppercase truncate">
-        {{ $t('projectName') }}
-      </h1>
+    <router-link to="/" class="mz-sidebar-brand">
+      <AppLogo size="44" />
+      <span class="brand-name">{{ $t('projectName') }}</span>
     </router-link>
 
-    <div class="flex flex-col flex-1 overflow-y-auto">
-      <nav class="flex-1 flex flex-col">
-        <ul class="menu flex-1 flex flex-col w-auto gap-2 overflow-hidden">
-          <li>
-            <div class="nav-item py-0 flex router-link-container">
-              <router-link
-                to="/home"
-                title="Home"
-                class="menu-title opacity-70 flex-1 flex items-center gap-2"
-              >
-                <HomeIcon /> {{ $t('navbar.home') }}
-              </router-link>
-            </div>
-          </li>
-          <li>
-            <div class="nav-item py-0 flex router-link-container">
-              <router-link
-                to="/settings"
-                title="Home"
-                class="menu-title flex flex-1 opacity-70 items-center gap-2"
-              >
-                <GearIcon /> {{ $t('navbar.settings') }}
-              </router-link>
-            </div>
-          </li>
-          <li v-for="section in navigations" :key="section.sectionName">
-            <!-- Section title -->
-            <span class="menu-title flex opacity-70 items-center gap-2">
-              <font-awesome-icon v-if="section.icon" :icon="section.icon" />
-              {{ $t(section.sectionName) }}
-            </span>
-            <!-- Items -->
-            <GenesisNavList :items="section.navChilds" class="" />
-          </li>
-        </ul>
+    <!-- Navigation -->
+    <div class="mz-sidebar-body">
+      <nav class="mz-sidebar-nav">
+        <!-- Accueil -->
+        <div class="nav-item-wrap">
+          <router-link to="/home" class="mz-nav-link" title="Home">
+            <span class="mz-nav-link-icon"><HomeIcon /></span>
+            <span class="mz-nav-link-text">{{ $t('navbar.home') }}</span>
+          </router-link>
+        </div>
+
+        <!-- Paramètres -->
+        <div class="nav-item-wrap">
+          <router-link to="/settings" class="mz-nav-link" title="Settings">
+            <span class="mz-nav-link-icon"><GearIcon /></span>
+            <span class="mz-nav-link-text">{{ $t('navbar.settings') }}</span>
+          </router-link>
+        </div>
+
+        <!-- Sections dynamiques -->
+        <template v-for="section in navigations" :key="section.sectionName">
+          <div class="mz-nav-section-title">
+            <font-awesome-icon
+              v-if="section.icon"
+              :icon="section.icon"
+              class="mz-nav-section-icon"
+            />
+            {{ $t(section.sectionName) }}
+          </div>
+          <GenesisNavList :items="section.navChilds" />
+        </template>
       </nav>
     </div>
 
-    <!-- Bottom section -->
-    <div class="border-t border-base-content/10 flex flex-col gap-3"></div>
+    <!-- Bas de sidebar -->
+    <div class="mz-sidebar-footer"></div>
   </aside>
 </template>
 
@@ -63,33 +54,147 @@ import AppLogo from '@/components/AppLogo.vue'
 </script>
 
 <style scoped>
-.menu {
-  flex: 1;
+/* ── Sidebar container ── */
+.mz-sidebar {
+  min-width: 270px;
+  max-width: 270px;
+  background: var(--mz-brand-dark-surface);
+  border-right: 1px solid var(--mz-border-subtle-dark);
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+}
+
+/* ── Brand ── */
+.mz-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--mz-space-3);
+  padding: var(--mz-space-5) var(--mz-space-5);
+  text-decoration: none;
+  border-bottom: 1px solid var(--mz-border-subtle-dark);
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-size: var(--mz-font-size-md);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #ffffff 30%, #ffa24d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Body scrollable ── */
+.mz-sidebar-body {
+  flex: 1;
   overflow-y: auto;
+  padding: var(--mz-space-4) var(--mz-space-3);
 }
 
-.router-link-active {
-  font-weight: bold;
-  color: var(--color-primary);
+.mz-sidebar-body::-webkit-scrollbar {
+  width: 4px;
+}
+.mz-sidebar-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mz-sidebar-body::-webkit-scrollbar-thumb {
+  background: var(--mz-border-subtle-dark);
+  border-radius: 99px;
+}
+
+/* ── Navigation ── */
+.mz-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mz-space-1);
+}
+
+/* Section title */
+.mz-nav-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--mz-space-2);
+  font-size: var(--mz-font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--mz-text-on-dark-muted);
+  padding: var(--mz-space-4) var(--mz-space-3) var(--mz-space-2);
+  margin-top: var(--mz-space-2);
+}
+
+.mz-nav-section-icon {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Nav item wrapper */
+.nav-item-wrap {
+  display: flex;
+}
+
+/* Nav link */
+.mz-nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--mz-space-3);
+  padding: 9px var(--mz-space-3);
+  border-radius: var(--mz-radius-sm);
+  color: var(--mz-text-on-dark-medium);
+  text-decoration: none;
+  font-size: var(--mz-font-size-sm);
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.18s ease;
+}
+
+.mz-nav-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--mz-text-on-dark-high);
+}
+
+.mz-nav-link.router-link-active {
+  background: var(--mz-brand-accent-light);
+  color: var(--mz-brand-accent);
+  font-weight: 700;
   position: relative;
-  opacity: 1;
 }
 
-.router-link-active::before {
+.mz-nav-link.router-link-active::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: -7px;
-  width: 5px;
-  height: 100%;
-  background-color: var(--color-primary);
-  border-radius: 10px;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--mz-brand-accent);
+  border-radius: 0 4px 4px 0;
 }
 
-.router-link-container:has(.router-link-active) {
-  opacity: 1;
-  transition: background-color 0.25s ease;
+.mz-nav-link-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.mz-nav-link-text {
+  flex: 1;
+}
+
+/* ── Footer ── */
+.mz-sidebar-footer {
+  border-top: 1px solid var(--mz-border-subtle-dark);
+  padding: var(--mz-space-4) var(--mz-space-5);
+  min-height: 20px;
 }
 </style>

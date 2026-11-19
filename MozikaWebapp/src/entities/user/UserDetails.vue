@@ -1,108 +1,122 @@
 <template>
-  <div class="card bg-base-100">
-    <div class="card-body">
-      <div v-if="user">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label for="userId" class="block text-sm font-medium mb-1">Id</label>
-            <div id="userId" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.id ? $n(user.id, 'decimal') : '--' }}</span>
-            </div>
+  <div class="user-details-wrapper">
+    <div v-if="user" class="space-y-6">
+      <!-- ProfileCard pour l'utilisateur -->
+      <ProfileCard
+        :name="userDisplayName"
+        :username="username"
+        :role-tag="
+          user.roleidUserRoles?.getKeyValue?.() ?? user.roleidUserRoles?.name ?? 'Utilisateur'
+        "
+        :bio="user.phone ? `Téléphone : ${user.phone}` : 'Aucune information supplémentaire.'"
+        :is-certified="Boolean(user.emailVerifiedAt)"
+        :show-follow-btn="false"
+      />
+
+      <!-- Informations système & sécurité -->
+      <div class="mz-card detail-section">
+        <h3 class="section-title">Compte, Statut & Sécurité</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">ID Utilisateur</span>
+            <span class="detail-value">#{{ user.id ? $n(user.id, 'decimal') : '--' }}</span>
           </div>
-          <div>
-            <label for="userEmail" class="block text-sm font-medium mb-1">Email</label>
-            <div id="userEmail" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.email ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Adresse email</span>
+            <span class="detail-value">{{ user.email ?? '--' }}</span>
           </div>
-          <div>
-            <label for="userPhone" class="block text-sm font-medium mb-1">Phone</label>
-            <div id="userPhone" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.phone ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Numéro de téléphone</span>
+            <span class="detail-value">{{ user.phone ?? '--' }}</span>
           </div>
-          <div>
-            <label for="userEmailVerifiedAt" class="block text-sm font-medium mb-1"
-              >Email verified at</label
-            >
-            <div id="userEmailVerifiedAt" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.emailVerifiedAt ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Rôle du compte</span>
+            <span class="detail-value">
+              <span v-if="user.roleidUserRoles" class="mz-badge mz-badge-accent">
+                {{ user.roleidUserRoles.getKeyValue?.() ?? user.roleidUserRoles }}
+              </span>
+              <span v-else>--</span>
+            </span>
           </div>
-          <div>
-            <label for="userPhoneVerifiedAt" class="block text-sm font-medium mb-1"
-              >Phone verified at</label
-            >
-            <div id="userPhoneVerifiedAt" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.phoneVerifiedAt ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Statut du compte</span>
+            <span class="detail-value">
+              <span v-if="user.statusidUserStatuses" class="mz-badge mz-badge-success">
+                {{ user.statusidUserStatuses.getKeyValue?.() ?? user.statusidUserStatuses }}
+              </span>
+              <span v-else>--</span>
+            </span>
           </div>
-          <div>
-            <label for="userPasswordHash" class="block text-sm font-medium mb-1"
-              >Password hash</label
-            >
-            <div id="userPasswordHash" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.passwordHash ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Vérification Email</span>
+            <span class="detail-value">
+              <span v-if="user.emailVerifiedAt" class="mz-badge mz-badge-primary">
+                Vérifié le {{ formatDate(user.emailVerifiedAt) }}
+              </span>
+              <span v-else class="text-muted">Non vérifié</span>
+            </span>
           </div>
-          <div>
-            <label for="userRoleidUserRoles" class="block text-sm font-medium mb-1"
-              >User role</label
-            >
-            <div id="userRoleidUserRoles" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.roleidUserRoles?.getKeyValue() ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Vérification Téléphone</span>
+            <span class="detail-value">
+              <span v-if="user.phoneVerifiedAt" class="mz-badge mz-badge-primary">
+                Vérifié le {{ formatDate(user.phoneVerifiedAt) }}
+              </span>
+              <span v-else class="text-muted">Non vérifié</span>
+            </span>
           </div>
-          <div>
-            <label for="userStatusidUserStatuses" class="block text-sm font-medium mb-1"
-              >User statuse</label
-            >
-            <div id="userStatusidUserStatuses" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.statusidUserStatuses?.getKeyValue() ?? '' }}</span>
-            </div>
+
+          <div class="detail-item" v-if="user.createdAt">
+            <span class="detail-label">Date d'inscription</span>
+            <span class="detail-value">{{ formatDate(user.createdAt) }}</span>
           </div>
-          <div>
-            <label for="userCreatedAt" class="block text-sm font-medium mb-1">Created at</label>
-            <div id="userCreatedAt" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.createdAt ?? '' }}</span>
-            </div>
+
+          <div class="detail-item" v-if="user.updatedAt">
+            <span class="detail-label">Dernière mise à jour</span>
+            <span class="detail-value">{{ formatDate(user.updatedAt) }}</span>
           </div>
-          <div>
-            <label for="userUpdatedAt" class="block text-sm font-medium mb-1">Updated at</label>
-            <div id="userUpdatedAt" class="input w-full bg-base-100 cursor-default">
-              <span>{{ user.updatedAt ?? '' }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="flex justify-end gap-3 mt-6">
-          <GenesisButton @click="goToUpdateFormView(user)" class="btn btn-outline btn-neutral">
-            <EditIcon class="mr-2" />
-            <span>{{ $t('button.update') }}</span>
-          </GenesisButton>
-          <GenesisButton
-            @click="openDeletePopup(user)"
-            class="btn-outline btn-error hover:text-white"
-          >
-            <TrashIcon class="mr-2" />
-            <span>{{ $t('button.delete') }}</span>
-          </GenesisButton>
         </div>
       </div>
+
+      <!-- Actions -->
+      <div class="detail-actions">
+        <GenesisButton @click="goToUpdateFormView(user)" class="mz-btn mz-btn-secondary">
+          <EditIcon class="action-icon" />
+          <span>{{ $t('button.update') }}</span>
+        </GenesisButton>
+
+        <GenesisButton
+          @click="openDeletePopup(user)"
+          class="mz-btn"
+          style="background: #fee2e2; color: #ef4444; border: 1.5px solid #fecaca"
+        >
+          <TrashIcon class="action-icon" />
+          <span>{{ $t('button.delete') }}</span>
+        </GenesisButton>
+      </div>
     </div>
+
+    <DeleteConfirmationPopup
+      :visible="deletePopup"
+      :message="`Êtes-vous sûr de vouloir supprimer l'utilisateur ${user?.email ?? user?.id} ?`"
+      subMessage="Cette action est irréversible."
+      @confirm="confirmDelete"
+      @cancel="closePopup"
+    />
   </div>
-  <DeleteConfirmationPopup
-    :visible="deletePopup"
-    :message="`Êtes-vous sûr de vouloir supprimer User user?.id ?`"
-    subMessage="Cette action est irréversible."
-    @confirm="confirmDelete"
-    @cancel="closePopup"
-  />
 </template>
 
 <script setup lang="ts">
-import type { PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 
 import type { User } from '@/models/UserModel'
+import ProfileCard from '@/components/common/ProfileCard.vue'
 import GenesisButton from '@/components/button/GenesisButton.vue'
 import { usePopup } from '@/composables/usePopup'
 import { useUsers } from '@/composables/useUsers'
@@ -117,6 +131,16 @@ const props = defineProps({
     required: true,
   },
 })
+
+const username = computed(() => {
+  if (!props.user?.email) return `user_${props.user?.id ?? ''}`
+  return props.user.email.split('@')[0]
+})
+
+const userDisplayName = computed(() => {
+  return username.value
+})
+
 // Stores
 const { closePopup, openPopup, visible: deletePopup } = usePopup(false)
 const { deleteUser, goToListView, goToUpdateFormView } = useUsers()
@@ -136,4 +160,76 @@ const confirmDelete = async () => {
 
 const { formatDate } = useDateFormat()
 </script>
-<style scoped></style>
+
+<style scoped>
+.user-details-wrapper {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--mz-space-5);
+}
+
+.detail-section {
+  padding: var(--mz-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mz-space-4);
+}
+
+.section-title {
+  font-size: var(--mz-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mz-text-on-light-muted);
+  margin: 0;
+  padding-bottom: var(--mz-space-3);
+  border-bottom: 1px solid var(--mz-border-subtle-light);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--mz-space-4);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mz-text-on-light-muted);
+}
+
+.detail-value {
+  font-size: var(--mz-font-size-sm);
+  font-weight: 600;
+  color: var(--mz-text-on-light-high);
+  word-break: break-word;
+}
+
+.text-muted {
+  color: var(--mz-text-on-light-muted);
+  font-weight: normal;
+}
+
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mz-space-3);
+  margin-top: var(--mz-space-6);
+  padding-top: var(--mz-space-4);
+  border-top: 1px solid var(--mz-border-subtle-light);
+}
+
+.action-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+}
+</style>
