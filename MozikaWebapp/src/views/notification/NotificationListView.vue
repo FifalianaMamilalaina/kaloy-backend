@@ -1,25 +1,22 @@
 <template>
-  <div class="w-full">
+  <div class="mz-page-view">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-semibold text-base-content">
-        {{ $t('entity.nav', { entity: 'Notification' }) }}
-        <span class="text-base-content/50 font-normal"> {{ $t('entity.list.nav') }}</span>
-      </h3>
-      <div class="flex items-center gap-3">
-        <!-- Composant réutilisable pour le basculement de vue -->
+    <PageHeader
+      :title="$t('entity.nav', { entity: 'Notification' })"
+      :subtitle="$t('entity.list.nav')"
+    >
+      <template #actions>
         <LayoutSwitcher v-model="layoutMode" />
-
         <GenesisButton
           title="Create new notification"
           @click="goToCreateFormView"
-          class="btn-secondary"
+          class="mz-btn mz-btn-primary"
         >
           <PlusIcon />
           {{ $t('button.addEntity', { entity: 'Notification' }) }}
         </GenesisButton>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Table -->
     <EntityTable
@@ -45,6 +42,7 @@ import { Notification } from '@/models/NotificationModel'
 import NotificationList from '@/entities/notification/NotificationList.vue'
 import EntityTable from '@/components/table/EntityTable.vue'
 import LayoutSwitcher from '@/components/button/LayoutSwitcher.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useNotifications } from '@/composables/useNotifications'
 import GenesisButton from '@/components/button/GenesisButton.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'

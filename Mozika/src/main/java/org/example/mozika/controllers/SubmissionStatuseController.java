@@ -75,12 +75,7 @@ public class SubmissionStatuseController  {
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<SubmissionStatuse> submissionstatuses = submissionstatuseService.getAllSubmissionStatuse(pageable);
 	
-	    String message = "submission statuse retrieved successfully";
-	
-	    if(!submissionstatuses.hasContent()) {
-	            message = "No submission statuse found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	    String message = submissionstatuses.hasContent() ? "submission statuse retrieved successfully" : "No submission statuse found";
 	
 	    RestResponse<Page<SubmissionStatuse>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,
@@ -125,12 +120,7 @@ public class SubmissionStatuseController  {
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<SubmissionStatuse> submissionstatuses = submissionstatuseService.getAllSubmissionStatuse(pageable, object);
 	
-	    String message = "submission statuse retrieved successfully";
-	
-	    if(!submissionstatuses.hasContent()) {
-	            message = "No submission statuse found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	    String message = submissionstatuses.hasContent() ? "submission statuse retrieved successfully" : "No submission statuse found";
 	
 	    RestResponse<Page<SubmissionStatuse>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,

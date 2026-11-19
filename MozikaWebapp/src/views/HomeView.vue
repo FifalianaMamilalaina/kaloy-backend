@@ -71,77 +71,135 @@
         </div>
       </header>
 
-      <!-- SECTION 1 : Nouveauté -->
+      <!-- SECTION 1 : Nouveautés (Événements & Spectacles de l'administration) -->
       <section class="music-section">
         <div class="section-heading">
-          <h2 class="section-title">Nouveauté</h2>
+          <div class="section-title-group">
+            <h2 class="section-title">Nouveautés</h2>
+            <span class="section-subtitle">Événements, spectacles & annonces</span>
+          </div>
           <a href="#" @click.prevent="showAllNew = !showAllNew" class="see-all-link">
             {{ showAllNew ? 'réduire' : 'voir tout' }}
           </a>
         </div>
 
-        <div class="cards-grid">
-          <!-- Un clic sur la carte ouvre la page détail -->
-          <div
-            v-for="item in displayedNewReleases"
-            :key="item.id"
-            class="music-card"
-            role="link"
-            tabindex="0"
-            :aria-label="`Ouvrir ${item.title}`"
-            @click="goToSong(item.id)"
-            @keydown.enter="goToSong(item.id)"
+        <!-- Chargement -->
+        <div v-if="loadingEvents" class="events-loading-box">
+          <div class="events-spinner"></div>
+          <span>Chargement des événements...</span>
+        </div>
+
+        <!-- Aucune nouveauté -->
+        <div v-else-if="displayedEvents.length === 0" class="events-empty-box">
+          <svg
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
           >
-            <div class="card-cover-wrapper" :style="{ background: item.coverBg }">
-              <div class="cover-placeholder">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <p>Aucun événement ou spectacle annoncé pour le moment.</p>
+        </div>
+
+        <!-- Grille des événements réels -->
+        <div v-else class="cards-grid">
+          <div
+            v-for="(event, idx) in displayedEvents"
+            :key="event.id"
+            class="music-card event-card"
+            role="button"
+            tabindex="0"
+            :aria-label="`Consulter : ${event.name}`"
+            @click="openEvent(event)"
+            @keydown.enter="openEvent(event)"
+          >
+            <div
+              class="card-cover-wrapper"
+              :style="{ background: eventGradients[idx % eventGradients.length] }"
+            >
+              <div class="event-badge-pill">
                 <svg
-                  width="42"
-                  height="42"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <span>Événement</span>
+              </div>
+
+              <div class="event-cover-icon">
+                <svg
+                  width="48"
+                  height="48"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.6"
                 >
-                  <path d="M9 18V5l12-2v13"></path>
-                  <circle cx="6" cy="18" r="3"></circle>
-                  <circle cx="18" cy="16" r="3"></circle>
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                  <circle cx="8" cy="14" r="1" fill="currentColor" />
+                  <circle cx="12" cy="14" r="1" fill="currentColor" />
+                  <circle cx="16" cy="14" r="1" fill="currentColor" />
+                  <circle cx="8" cy="18" r="1" fill="currentColor" />
+                  <circle cx="12" cy="18" r="1" fill="currentColor" />
                 </svg>
               </div>
-              <!-- .stop : le bouton lecture ne déclenche pas l'ouverture de la page -->
-              <button
-                class="play-overlay-btn"
-                :aria-label="`Écouter ${item.title}`"
-                @click.stop="playTrack(item)"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+
+              <div class="event-hover-hint">
+                <span>Voir fiche détaillée</span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <polyline points="9 18 15 12 9 6" />
                 </svg>
-              </button>
+              </div>
             </div>
 
             <div class="card-details">
               <div class="card-title-row">
-                <h3 class="card-title">{{ item.title }}</h3>
-                <span
-                  v-if="item.isCertified"
-                  class="certified-badge"
-                  title="Artiste certifié (Module S5)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                    ></path>
-                  </svg>
-                </span>
+                <h3 class="card-title">{{ event.name }}</h3>
               </div>
-              <p class="card-date">{{ item.date }}</p>
-              <p class="card-artist">{{ item.artist }} • {{ item.type }}</p>
+              <p class="card-date">{{ formatEventDate(event.startDate, event.endDate) }}</p>
+              <p class="card-artist" v-if="event.createdbyartistidArtists">
+                {{ event.createdbyartistidArtists.stageName ?? 'Organisateur' }}
+              </p>
+              <p class="card-artist" v-else>Administration Mozika</p>
 
-              <button
-                :class="['btn-follow-compact', { following: isFollowing(item.artistId) }]"
-                @click.stop="toggleFollow(item.artistId)"
-              >
-                {{ isFollowing(item.artistId) ? 'Abonné' : '+ Suivre' }}
+              <button class="btn-event-detail" @click.stop="openEvent(event)">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                Fiche détaillée
               </button>
             </div>
           </div>
@@ -226,16 +284,22 @@
           <button class="player-btn-close" @click="currentPlaying = null">✕</button>
         </div>
       </div>
+
+      <!-- Modal de fiche détaillée de l'événement / nouveauté -->
+      <EventDetailModal :event="selectedEvent" @close="selectedEvent = null" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import heroImg from '@/assets/images/hero-headphones.jpg'
-import { newReleases, recommendedTracks, type Song } from '@/config/songs'
+import { recommendedTracks, type Song } from '@/config/songs'
+import type { Event } from '@/models/EventModel'
+import * as EventService from '@/services/EventService'
+import EventDetailModal from '@/components/EventDetailModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -244,6 +308,46 @@ const searchQuery = ref('')
 const activeFilter = ref('Tous')
 const showAllNew = ref(false)
 const currentPlaying = ref<Song | null>(null)
+
+// Événements / Spectacles réels (Nouveautés de l'administration)
+const events = ref<Event[]>([])
+const loadingEvents = ref(true)
+const selectedEvent = ref<Event | null>(null)
+
+const eventGradients = [
+  'linear-gradient(135deg, #1b1340 0%, #3d2880 50%, #e67300 100%)',
+  'linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #f97316 100%)',
+  'linear-gradient(135deg, #2e1065 0%, #581c87 60%, #fb923c 100%)',
+  'linear-gradient(135deg, #172554 0%, #1e3a8a 55%, #ea580c 100%)',
+  'linear-gradient(135deg, #18181b 0%, #312e81 60%, #d97706 100%)',
+]
+
+onMounted(async () => {
+  try {
+    const res = await EventService.getAll({ page: 0, size: 20 })
+    events.value = res.data ?? []
+  } catch (err) {
+    console.error('Erreur chargement événements:', err)
+  } finally {
+    loadingEvents.value = false
+  }
+})
+
+function openEvent(event: Event) {
+  selectedEvent.value = event
+}
+
+function formatEventDate(startDate?: string, endDate?: string): string {
+  if (!startDate) return 'Date à confirmer'
+  const s = new Date(startDate)
+  const sStr = s.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+  if (endDate && endDate !== startDate) {
+    const e = new Date(endDate)
+    const eStr = e.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    return `${sStr} → ${eStr}`
+  }
+  return sStr
+}
 
 // Social Follow reactive state (Module S6)
 const followedArtistIds = ref<Set<number>>(new Set([1]))
@@ -258,16 +362,16 @@ const userRoleName = computed(() => {
 
 const filters = ['Tous', 'Nouveautés', 'Recommandé', 'Artistes', 'Groupes']
 
-const displayedNewReleases = computed(() => {
-  let list = newReleases
+const displayedEvents = computed(() => {
+  let list = events.value
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     list = list.filter(
-      (item) => item.title.toLowerCase().includes(q) || item.artist.toLowerCase().includes(q),
+      (e) =>
+        (e.name ?? '').toLowerCase().includes(q) ||
+        (e.description ?? '').toLowerCase().includes(q) ||
+        (e.createdbyartistidArtists?.stageName ?? '').toLowerCase().includes(q),
     )
-  }
-  if (activeFilter.value === 'Groupes') {
-    list = list.filter((i) => i.type === 'Groupe')
   }
   if (!showAllNew.value) {
     return list.slice(0, 3)
@@ -523,6 +627,20 @@ async function goToSong(id: number) {
   margin-bottom: calc(20 * var(--u));
 }
 
+.section-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: calc(14 * var(--u));
+  flex-wrap: wrap;
+}
+
+.section-subtitle {
+  font-size: calc(14 * var(--u));
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.01em;
+}
+
 .section-title {
   font-size: calc(26 * var(--u));
   font-weight: 800;
@@ -694,6 +812,119 @@ async function goToSong(id: number) {
   background: rgba(230, 115, 0, 0.1);
   border-color: #e67300;
   color: #e67300;
+}
+
+/* ── Events UI specifics ── */
+.events-loading-box,
+.events-empty-box {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(calc(12 * var(--u)));
+  border-radius: calc(20 * var(--u));
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  padding: calc(36 * var(--u)) calc(24 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12 * var(--u));
+  color: rgba(255, 255, 255, 0.7);
+  font-size: calc(15 * var(--u));
+}
+
+.events-spinner {
+  width: calc(28 * var(--u));
+  height: calc(28 * var(--u));
+  border: calc(3 * var(--u)) solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ffa500;
+  border-radius: 50%;
+  animation: spin-events 0.8s linear infinite;
+}
+@keyframes spin-events {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.event-card {
+  cursor: pointer;
+  position: relative;
+}
+
+.event-badge-pill {
+  position: absolute;
+  top: calc(12 * var(--u));
+  left: calc(12 * var(--u));
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  background: rgba(10, 6, 28, 0.45);
+  backdrop-filter: blur(calc(8 * var(--u)));
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: calc(11 * var(--u));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: calc(4 * var(--u)) calc(10 * var(--u));
+  border-radius: calc(999 * var(--u));
+}
+
+.event-cover-icon {
+  color: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 calc(4 * var(--u)) calc(12 * var(--u)) rgba(0, 0, 0, 0.3));
+  transition: transform 0.25s ease;
+}
+
+.event-card:hover .event-cover-icon {
+  transform: scale(1.1);
+}
+
+.event-hover-hint {
+  position: absolute;
+  bottom: calc(12 * var(--u));
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  font-size: calc(12 * var(--u));
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(230, 115, 0, 0.9);
+  padding: calc(6 * var(--u)) calc(14 * var(--u));
+  border-radius: calc(999 * var(--u));
+  opacity: 0;
+  transform: translateY(calc(8 * var(--u)));
+  transition: all 0.2s ease;
+  box-shadow: 0 calc(4 * var(--u)) calc(12 * var(--u)) rgba(230, 115, 0, 0.4);
+}
+
+.event-card:hover .event-hover-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.btn-event-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  align-self: flex-start;
+  margin-top: calc(8 * var(--u));
+  padding: calc(8 * var(--u)) calc(16 * var(--u));
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+  border-radius: calc(999 * var(--u));
+  border: 1.5px solid rgba(230, 115, 0, 0.35);
+  background: rgba(230, 115, 0, 0.08);
+  color: #c45e00;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-event-detail:hover {
+  background: linear-gradient(135deg, #1b1340 0%, #e67300 100%);
+  border-color: transparent;
+  color: #ffffff;
+  transform: translateY(calc(-1 * var(--u)));
+  box-shadow: 0 calc(4 * var(--u)) calc(12 * var(--u)) rgba(230, 115, 0, 0.25);
 }
 
 /* ── SECTION 2 : Recommended List (grille multi-colonnes) ── */

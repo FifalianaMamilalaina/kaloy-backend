@@ -75,12 +75,7 @@ public class ContentSubmissionController  {
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<ContentSubmission> contentsubmissions = contentsubmissionService.getAllContentSubmission(pageable);
 	
-	    String message = "content submission retrieved successfully";
-	
-	    if(!contentsubmissions.hasContent()) {
-	            message = "No content submission found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	    String message = contentsubmissions.hasContent() ? "content submission retrieved successfully" : "No content submission found";
 	
 	    RestResponse<Page<ContentSubmission>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,
@@ -125,12 +120,7 @@ public class ContentSubmissionController  {
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<ContentSubmission> contentsubmissions = contentsubmissionService.getAllContentSubmission(pageable, object);
 	
-	    String message = "content submission retrieved successfully";
-	
-	    if(!contentsubmissions.hasContent()) {
-	            message = "No content submission found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	    String message = contentsubmissions.hasContent() ? "content submission retrieved successfully" : "No content submission found";
 	
 	    RestResponse<Page<ContentSubmission>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,

@@ -1,121 +1,125 @@
 <template>
-  <div class="card bg-base-100">
-    <div class="card-body">
-      <div v-if="artist">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label for="artistId" class="block text-sm font-medium mb-1">Id</label>
-            <div id="artistId" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.id ? $n(artist.id, 'decimal') : '--' }}</span>
-            </div>
+  <div class="artist-details-wrapper">
+    <div v-if="artist" class="space-y-6">
+      <!-- Fiche profil unifiée regroupant l'identité de l'artiste -->
+      <ProfileCard
+        :name="artist.stageName ?? 'Artiste sans nom'"
+        :username="artist.useridUsers?.email ? artist.useridUsers.email.split('@')[0] : ''"
+        :photo-url="artist.photoUrl"
+        :bio="artist.bio ?? 'Aucune biographie renseignée pour le moment.'"
+        :role-tag="
+          artist.artisttypeidArtistTypes?.getKeyValue?.() ??
+          artist.artisttypeidArtistTypes?.name ??
+          'Artiste'
+        "
+        :is-certified="Boolean(artist.isCertified)"
+        :show-follow-btn="false"
+      />
+
+      <!-- Section Informations techniques & modération -->
+      <div class="mz-card detail-section">
+        <h3 class="section-title">Informations techniques & modération</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">ID Système</span>
+            <span class="detail-value">#{{ artist.id ? $n(artist.id, 'decimal') : '--' }}</span>
           </div>
-          <div>
-            <label for="artistUseridUsers" class="block text-sm font-medium mb-1">User</label>
-            <div id="artistUseridUsers" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.useridUsers?.getKeyValue() ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Utilisateur associé</span>
+            <span class="detail-value">{{ artist.useridUsers?.getKeyValue?.() ?? '--' }}</span>
           </div>
-          <div>
-            <label for="artistArtisttypeidArtistTypes" class="block text-sm font-medium mb-1"
-              >Artist type</label
-            >
-            <div id="artistArtisttypeidArtistTypes" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.artisttypeidArtistTypes?.getKeyValue() ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Type d'artiste</span>
+            <span class="detail-value">{{
+              artist.artisttypeidArtistTypes?.getKeyValue?.() ?? '--'
+            }}</span>
           </div>
-          <div>
-            <label for="artistStageName" class="block text-sm font-medium mb-1">Stage name</label>
-            <div id="artistStageName" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.stageName ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Nom de scène</span>
+            <span class="detail-value">{{ artist.stageName ?? '--' }}</span>
           </div>
-          <div>
-            <label for="artistActiveSinceYear" class="block text-sm font-medium mb-1"
-              >Active since year</label
-            >
-            <div id="artistActiveSinceYear" class="input w-full bg-base-100 cursor-default">
-              <span>{{
-                artist.activeSinceYear ? $n(artist.activeSinceYear, 'decimal') : '--'
-              }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Actif depuis</span>
+            <span class="detail-value">{{
+              artist.activeSinceYear ? $n(artist.activeSinceYear, 'decimal') : '--'
+            }}</span>
           </div>
-          <div>
-            <label for="artistPhotoUrl" class="block text-sm font-medium mb-1">Photo url</label>
-            <div id="artistPhotoUrl" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.photoUrl ?? '' }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Statut de vérification</span>
+            <span class="detail-value">
+              <span
+                v-if="artist.verificationstatusidVerificationStatuses"
+                class="mz-badge mz-badge-accent"
+              >
+                {{
+                  artist.verificationstatusidVerificationStatuses.getKeyValue?.() ??
+                  artist.verificationstatusidVerificationStatuses
+                }}
+              </span>
+              <span v-else class="text-muted">Non vérifié</span>
+            </span>
           </div>
-          <div>
-            <label for="artistBio" class="block text-sm font-medium mb-1">Bio</label>
-            <div id="artistBio" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.bio ?? '' }}</span>
-            </div>
+
+          <div class="detail-item" v-if="artist.verifiedAt">
+            <span class="detail-label">Date de vérification</span>
+            <span class="detail-value">{{ formatDate(artist.verifiedAt) }}</span>
           </div>
-          <div>
-            <label
-              for="artistVerificationstatusidVerificationStatuses"
-              class="block text-sm font-medium mb-1"
-              >Verification statuse</label
-            >
-            <div
-              id="artistVerificationstatusidVerificationStatuses"
-              class="input w-full bg-base-100 cursor-default"
-            >
-              <span>{{
-                artist.verificationstatusidVerificationStatuses?.getKeyValue() ?? ''
-              }}</span>
-            </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Certification</span>
+            <span class="detail-value">
+              <span v-if="artist.isCertified" class="mz-badge mz-badge-success">✓ Certifié</span>
+              <span v-else class="mz-badge" style="background: #f1f5f9; color: #64748b"
+                >Non certifié</span
+              >
+            </span>
           </div>
-          <div>
-            <label for="artistVerifiedAt" class="block text-sm font-medium mb-1">Verified at</label>
-            <div id="artistVerifiedAt" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.verifiedAt ?? '' }}</span>
-            </div>
+
+          <div class="detail-item" v-if="artist.createdAt">
+            <span class="detail-label">Date d'inscription</span>
+            <span class="detail-value">{{ formatDate(artist.createdAt) }}</span>
           </div>
-          <div>
-            <label for="artistIsCertified" class="block text-sm font-medium mb-1"
-              >Is certified</label
-            >
-            <div id="artistIsCertified" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.isCertified ?? '' }}</span>
-            </div>
-          </div>
-          <div>
-            <label for="artistCreatedAt" class="block text-sm font-medium mb-1">Created at</label>
-            <div id="artistCreatedAt" class="input w-full bg-base-100 cursor-default">
-              <span>{{ artist.createdAt ?? '' }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="flex justify-end gap-3 mt-6">
-          <GenesisButton @click="goToUpdateFormView(artist)" class="btn btn-outline btn-neutral">
-            <EditIcon class="mr-2" />
-            <span>{{ $t('button.update') }}</span>
-          </GenesisButton>
-          <GenesisButton
-            @click="openDeletePopup(artist)"
-            class="btn-outline btn-error hover:text-white"
-          >
-            <TrashIcon class="mr-2" />
-            <span>{{ $t('button.delete') }}</span>
-          </GenesisButton>
         </div>
       </div>
+
+      <!-- Actions bar -->
+      <div class="detail-actions">
+        <GenesisButton @click="goToUpdateFormView(artist)" class="mz-btn mz-btn-secondary">
+          <EditIcon class="action-icon" />
+          <span>{{ $t('button.update') }}</span>
+        </GenesisButton>
+
+        <GenesisButton
+          @click="openDeletePopup(artist)"
+          class="mz-btn"
+          style="background: #fee2e2; color: #ef4444; border: 1.5px solid #fecaca"
+        >
+          <TrashIcon class="action-icon" />
+          <span>{{ $t('button.delete') }}</span>
+        </GenesisButton>
+      </div>
     </div>
+
+    <DeleteConfirmationPopup
+      :visible="deletePopup"
+      :message="`Êtes-vous sûr de vouloir supprimer l'artiste ${artist?.stageName ?? artist?.id} ?`"
+      subMessage="Cette action est irréversible."
+      @confirm="confirmDelete"
+      @cancel="closePopup"
+    />
   </div>
-  <DeleteConfirmationPopup
-    :visible="deletePopup"
-    :message="`Êtes-vous sûr de vouloir supprimer Artist artist?.id ?`"
-    subMessage="Cette action est irréversible."
-    @confirm="confirmDelete"
-    @cancel="closePopup"
-  />
 </template>
 
 <script setup lang="ts">
 import type { PropType } from 'vue'
 
 import type { Artist } from '@/models/ArtistModel'
+import ProfileCard from '@/components/common/ProfileCard.vue'
 import GenesisButton from '@/components/button/GenesisButton.vue'
 import { usePopup } from '@/composables/usePopup'
 import { useArtists } from '@/composables/useArtists'
@@ -130,6 +134,7 @@ const props = defineProps({
     required: true,
   },
 })
+
 // Stores
 const { closePopup, openPopup, visible: deletePopup } = usePopup(false)
 const { deleteArtist, goToListView, goToUpdateFormView } = useArtists()
@@ -149,4 +154,76 @@ const confirmDelete = async () => {
 
 const { formatDate } = useDateFormat()
 </script>
-<style scoped></style>
+
+<style scoped>
+.artist-details-wrapper {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--mz-space-5);
+}
+
+.detail-section {
+  padding: var(--mz-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mz-space-4);
+}
+
+.section-title {
+  font-size: var(--mz-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mz-text-on-light-muted);
+  margin: 0;
+  padding-bottom: var(--mz-space-3);
+  border-bottom: 1px solid var(--mz-border-subtle-light);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--mz-space-4);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mz-text-on-light-muted);
+}
+
+.detail-value {
+  font-size: var(--mz-font-size-sm);
+  font-weight: 600;
+  color: var(--mz-text-on-light-high);
+  word-break: break-word;
+}
+
+.text-muted {
+  color: var(--mz-text-on-light-muted);
+  font-weight: normal;
+}
+
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mz-space-3);
+  margin-top: var(--mz-space-6);
+  padding-top: var(--mz-space-4);
+  border-top: 1px solid var(--mz-border-subtle-light);
+}
+
+.action-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+}
+</style>

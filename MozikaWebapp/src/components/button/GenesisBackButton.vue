@@ -1,5 +1,5 @@
 <template>
-  <GenesisButton v-bind="$attrs" class="btn-primary">
+  <GenesisButton v-bind="$attrs" class="mz-btn-outline">
     <LeftArrowIcon />
     <span v-if="label">{{ label }}</span>
     <span v-else><slot /></span>

@@ -60,14 +60,13 @@ export async function verifyOtp(otpToken: string, code: string) {
 const AUTH_URL = '/auth'
 const ME_URL = '/me'
 
-// Alignés sur le backend (DefaultAuthService) : OTP valable 10 min,
-// 60 s minimum entre deux envois.
+// OTP valable 10 minutes.
 const OTP_TTL_MS = 10 * 60 * 1000
+
+// Minimum 60 secondes entre deux envois.
 const RESEND_COOLDOWN_MS = 60 * 1000
 
-// Le backend identifie un OTP par userId. Les vues, elles, manipulent un
-// "otpToken" : on utilise String(userId) comme token, et on garde en mémoire
-// à qui / quand le dernier code a été envoyé.
+// État local des OTP
 const otpStates = new Map<string, { destination: string; sentAt: number }>()
 
 function isoIn(fromMs: number): string {
@@ -75,19 +74,35 @@ function isoIn(fromMs: number): string {
 }
 
 function fail<T>(message: string, status = 400): DataResponse<T> {
-  return { success: false, status, data: undefined, error: message, errors: null }
+  return {
+    success: false,
+    status,
+    data: undefined,
+    error: message,
+    errors: null,
+  }
 }
 
 function mapData<A, B>(res: DataResponse<A>, fn: (data: A) => B): DataResponse<B> {
-  return { ...res, data: res.success ? fn(res.data as A) : undefined }
+  return {
+    ...res,
+    data: res.success ? fn(res.data as A) : undefined,
+  }
 }
 
-// Retire les clés null/undefined pour laisser jouer les valeurs par défaut du backend
+// Retire les valeurs null/undefined avant d'envoyer
+// la requête au backend.
 function compact(obj: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null && v !== undefined))
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== null && value !== undefined),
+  )
 }
 
-// ── POST /auth/register/client | /auth/register/artist ───────────────────────
+// ─────────────────────────────────────────────────────────────
+// POST /auth/register/client
+// POST /auth/register/artist
+// ─────────────────────────────────────────────────────────────
+
 export async function register(payload: RegisterPayload): Promise<DataResponse<RegisterResult>> {
   const isArtist = payload.role === 'ARTIST'
 
@@ -111,68 +126,92 @@ export async function register(payload: RegisterPayload): Promise<DataResponse<R
       })
 
   const restApi = api<BackendRegisterResponse>()
+
   const response = await restApi.POST(
     `${AUTH_URL}/register/${isArtist ? 'artist' : 'client'}`,
     body,
   )
 
-  return mapData(RestResponse.handleDataResponse<BackendRegisterResponse>(response), (d) => {
-    const otpToken = String(d.userId)
+  return mapData(RestResponse.handleDataResponse<BackendRegisterResponse>(response), (data) => {
+    const otpToken = String(data.userId)
     const sentAt = Date.now()
-    otpStates.set(otpToken, { destination: d.email, sentAt })
+
+    otpStates.set(otpToken, {
+      destination: data.email,
+      sentAt,
+    })
+
     return {
-      id: d.userId,
-      email: d.email,
+      id: data.userId,
+      email: data.email,
       phone: payload.phone ?? '',
       role: payload.role,
-      status: d.status,
+      status: data.status,
       otpToken,
       expiresAt: isoIn(sentAt),
     }
   })
 }
 
-// ── POST /auth/login ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// POST /auth/login
+// ─────────────────────────────────────────────────────────────
+
 export async function login(payload: LoginPayload): Promise<DataResponse<LoginResult>> {
   const restApi = api<BackendAuthResponse>()
+
   const response = await restApi.POST(`${AUTH_URL}/login`, {
     email: payload.email,
     password: payload.password,
   })
 
-  return mapData(RestResponse.handleDataResponse<BackendAuthResponse>(response), (d) => ({
-    token: d.token,
-    userId: d.userId,
-    role: d.role,
+  return mapData(RestResponse.handleDataResponse<BackendAuthResponse>(response), (data) => ({
+    token: data.token,
+    userId: data.userId,
+    role: data.role,
   }))
 }
 
-// ── GET /me ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// GET /me
+// ─────────────────────────────────────────────────────────────
+
 export async function me(): Promise<DataResponse<MeResult>> {
   const restApi = api<BackendProfileResponse>()
+
   const response = await restApi.GET(ME_URL)
 
-  return mapData(RestResponse.handleDataResponse<BackendProfileResponse>(response), (p) => ({
-    id: p.userId,
-    email: p.email,
-    role: p.stageName !== undefined ? 'ARTIST' : 'CLIENT',
-    status: p.accountStatus,
+  return mapData(RestResponse.handleDataResponse<BackendProfileResponse>(response), (profile) => ({
+    id: profile.userId,
+    email: profile.email,
+    role: profile.stageName !== undefined ? 'ARTIST' : 'CLIENT',
+    status: profile.accountStatus,
   }))
 }
 
-// ── POST /me/email | /me/phone (1re étape : envoi du code) ───────────────────
-// ⚠ La confirmation (/me/email/confirm, /me/phone/confirm) n'est pas encore
-//   branchée côté frontend : voir le garde-fou dans verifyOtp().
+// ─────────────────────────────────────────────────────────────
+// POST /me/email
+// POST /me/phone
+// ─────────────────────────────────────────────────────────────
+
 export async function changeContact(
   payload: ChangeContactPayload,
 ): Promise<DataResponse<OtpSendResult>> {
   const isEmail = !!payload.newEmail
-  if (!isEmail && !payload.newPhone) return fail('Aucun nouveau contact fourni.')
+
+  if (!isEmail && !payload.newPhone) {
+    return fail('Aucun nouveau contact fourni.')
+  }
 
   const restApi = api<null>()
+
   const response = isEmail
-    ? await restApi.POST(`${ME_URL}/email`, { newEmail: payload.newEmail })
-    : await restApi.POST(`${ME_URL}/phone`, { newPhone: payload.newPhone })
+    ? await restApi.POST(`${ME_URL}/email`, {
+        newEmail: payload.newEmail,
+      })
+    : await restApi.POST(`${ME_URL}/phone`, {
+        newPhone: payload.newPhone,
+      })
 
   return mapData(RestResponse.handleDataResponse<null>(response), () => ({
     message: response.message,
@@ -182,18 +221,22 @@ export async function changeContact(
   }))
 }
 
-// ── POST /auth/resend-otp ────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// POST /auth/resend-otp
+// ─────────────────────────────────────────────────────────────
+
 export async function sendOtp(otpToken: string): Promise<DataResponse<OtpSendResult>> {
   const userId = Number(otpToken)
+
   if (!otpToken || Number.isNaN(userId)) {
     return fail(
       "Aucune inscription en cours pour ce code (la confirmation d'un changement de contact n'est pas encore branchée).",
     )
   }
 
-  // Un code vient d'être envoyé (à l'inscription ou par un renvoi) : le backend
-  // refuserait un renvoi avant 60 s ("Attendez 60 secondes"), donc on ne l'appelle pas.
   const last = otpStates.get(otpToken)
+
+  // Évite d'appeler le backend avant les 60 secondes.
   if (last && Date.now() - last.sentAt < RESEND_COOLDOWN_MS) {
     return {
       success: true,
@@ -209,22 +252,40 @@ export async function sendOtp(otpToken: string): Promise<DataResponse<OtpSendRes
   }
 
   const restApi = api<string | null>()
-  const response = await restApi.POST(`${AUTH_URL}/resend-otp`, { userId })
+
+  const response = await restApi.POST(`${AUTH_URL}/resend-otp`, {
+    userId,
+  })
 
   return mapData(RestResponse.handleDataResponse<string | null>(response), () => {
     const sentAt = Date.now()
+
     const destination = last?.destination ?? 'votre email'
-    otpStates.set(otpToken, { destination, sentAt })
-    return { message: response.message, destination, expiresAt: isoIn(sentAt), otpToken }
+
+    otpStates.set(otpToken, {
+      destination,
+      sentAt,
+    })
+
+    return {
+      message: response.message,
+      destination,
+      expiresAt: isoIn(sentAt),
+      otpToken,
+    }
   })
 }
 
-// ── POST /auth/verify-otp ────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// POST /auth/verify-otp
+// ─────────────────────────────────────────────────────────────
+
 export async function verifyOtp(
   otpToken: string,
   code: string,
 ): Promise<DataResponse<OtpVerifyResult>> {
   const userId = Number(otpToken)
+
   if (!otpToken || Number.isNaN(userId)) {
     return fail(
       "Aucune inscription en cours pour ce code (la confirmation d'un changement de contact n'est pas encore branchée).",
@@ -232,13 +293,17 @@ export async function verifyOtp(
   }
 
   const restApi = api<BackendAuthResponse>()
-  const response = await restApi.POST(`${AUTH_URL}/verify-otp`, { userId, code })
 
-  return mapData(RestResponse.handleDataResponse<BackendAuthResponse>(response), (d) => ({
+  const response = await restApi.POST(`${AUTH_URL}/verify-otp`, {
+    userId,
+    code,
+  })
+
+  return mapData(RestResponse.handleDataResponse<BackendAuthResponse>(response), (data) => ({
     message: response.message,
     status: 'VERIFIED',
-    token: d.token,
-    userId: d.userId,
-    role: d.role,
+    token: data.token,
+    userId: data.userId,
+    role: data.role,
   }))
 }

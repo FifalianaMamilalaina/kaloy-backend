@@ -106,12 +106,7 @@ private final UpNextQueueService upnextqueueService;
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<Song> songs = songService.getAllSong(pageable);
 	
-	    String message = "song retrieved successfully";
-	
-	    if(!songs.hasContent()) {
-	            message = "No song found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	    String message = songs.hasContent() ? "song retrieved successfully" : "No song found";
 	
 	    RestResponse<Page<Song>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,
@@ -156,12 +151,7 @@ private final UpNextQueueService upnextqueueService;
 	    Pageable pageable = PageRequest.of(page, size, sortObj);
 	    Page<Song> songs = songService.getAllSong(pageable, object);
 	
-	    String message = "song retrieved successfully";
-	
-	    if(!songs.hasContent()) {
-	            message = "No song found";
-	            throw new ResourceNotFoundException(message);
-	    }
+	    String message = songs.hasContent() ? "song retrieved successfully" : "No song found";
 	
 	    RestResponse<Page<Song>> response = RestResponse.buildSuccessResponse(
 	            HttpStatus.OK,

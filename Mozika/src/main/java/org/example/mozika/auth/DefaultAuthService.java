@@ -29,7 +29,6 @@ public class DefaultAuthService implements AuthService {
     private final UsersInfosRepository usersInfosRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthRefreshTokenRepository authRefreshTokenRepository;
     private final EmailService emailService;
     private final SmsService smsService;
 
@@ -46,7 +45,6 @@ public class DefaultAuthService implements AuthService {
             UsersInfosRepository usersInfosRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthRefreshTokenRepository authRefreshTokenRepository,
             EmailService emailService,
             SmsService smsService) {
         this.userRepository = userRepository;
@@ -62,7 +60,6 @@ public class DefaultAuthService implements AuthService {
         this.usersInfosRepository = usersInfosRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
-        this.authRefreshTokenRepository = authRefreshTokenRepository;
         this.emailService = emailService;
         this.smsService = smsService;
     }
@@ -222,7 +219,9 @@ public class DefaultAuthService implements AuthService {
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
-        return createAuthResponse(user);
+        String token = jwtService.generateToken(user);
+        String role = user.getRoleidUserRoles() != null ? user.getRoleidUserRoles().getName() : "CLIENT";
+        return new AuthResponse(token, user.getId(), user.getEmail(), role);
     }
 
     @Override
@@ -269,47 +268,9 @@ public class DefaultAuthService implements AuthService {
                     "Compte non vérifié — vérifiez votre email avec le code OTP");
         }
 
-        return createAuthResponse(user);
-    }
-
-    @Override
-    @Transactional
-    public AuthResponse refresh(String presentedRefreshToken) {
-        if (presentedRefreshToken == null || presentedRefreshToken.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session expirée. Veuillez vous reconnecter.");
-        }
-
-        String tokenHash = jwtService.hashRefreshToken(presentedRefreshToken);
-        AuthRefreshToken storedToken = authRefreshTokenRepository
-                .findValidForUpdate(tokenHash, LocalDateTime.now())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "Session expirée. Veuillez vous reconnecter."
-                ));
-        User user = storedToken.getUser();
-        authRefreshTokenRepository.delete(storedToken);
-        return createAuthResponse(user);
-    }
-
-    @Override
-    @Transactional
-    public void revokeRefreshToken(String presentedRefreshToken) {
-        if (presentedRefreshToken == null || presentedRefreshToken.isBlank()) return;
-        authRefreshTokenRepository.deleteByTokenHash(jwtService.hashRefreshToken(presentedRefreshToken));
-    }
-
-    private AuthResponse createAuthResponse(User user) {
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken();
-
-        AuthRefreshToken storedToken = new AuthRefreshToken();
-        storedToken.setUser(user);
-        storedToken.setTokenHash(jwtService.hashRefreshToken(refreshToken));
-        storedToken.setExpiresAt(jwtService.refreshTokenExpiresAt());
-        authRefreshTokenRepository.save(storedToken);
-
+        String token = jwtService.generateToken(user);
         String role = user.getRoleidUserRoles() != null ? user.getRoleidUserRoles().getName() : "CLIENT";
-        return new AuthResponse(accessToken, refreshToken, user.getId(), user.getEmail(), role);
+        return new AuthResponse(token, user.getId(), user.getEmail(), role);
     }
 
     private void sendOtp(User user, String otpChannel) {

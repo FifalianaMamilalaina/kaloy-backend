@@ -1,21 +1,19 @@
 <template>
-  <div class="w-full">
+  <div class="mz-page-view">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-semibold text-base-content">
-        {{ $t('entity.nav', { entity: 'Event' }) }}
-        <span class="text-base-content/50 font-normal"> {{ $t('entity.list.nav') }}</span>
-      </h3>
-      <div class="flex items-center gap-3">
-        <!-- Composant réutilisable pour le basculement de vue -->
+    <PageHeader :title="$t('entity.nav', { entity: 'Event' })" :subtitle="$t('entity.list.nav')">
+      <template #actions>
         <LayoutSwitcher v-model="layoutMode" />
-
-        <GenesisButton title="Create new event" @click="goToCreateFormView" class="btn-secondary">
+        <GenesisButton
+          title="Create new event"
+          @click="goToCreateFormView"
+          class="mz-btn mz-btn-primary"
+        >
           <PlusIcon />
           {{ $t('button.addEntity', { entity: 'Event' }) }}
         </GenesisButton>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Table -->
     <EntityTable
@@ -44,6 +42,7 @@ import LayoutSwitcher from '@/components/button/LayoutSwitcher.vue'
 import { useEvents } from '@/composables/useEvents'
 import GenesisButton from '@/components/button/GenesisButton.vue'
 import PlusIcon from '@/components/icons/PlusIcon.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const {
   events,
@@ -75,4 +74,9 @@ onMounted(() => {
   loadColumnConfig()
 })
 </script>
-<style scoped></style>
+<style scoped>
+.mz-page-view {
+  width: 100%;
+  padding: var(--mz-space-2);
+}
+</style>
